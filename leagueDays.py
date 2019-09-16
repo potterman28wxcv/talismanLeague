@@ -5,7 +5,7 @@ Player=int
 Day=int
 PlayerInfos = Dict[Player, Optional[List[Day]]]
 
-playerInfos : PlayerInfos = {
+rawPlayerInfos : PlayerInfos = {
   1: [1, 2, 3, 4],
   2: [1, 3, 5],
   3: [1, 2, 3, 4, 5],
@@ -37,6 +37,8 @@ playerInfos : PlayerInfos = {
   29: [1, 5],
   30: [1, 3, 4, 5]
 }
+
+playerInfos = {key:val for key, val in rawPlayerInfos.items() if val is not None}
 
 DayInfos = Dict[Day, Set[Player]]
 def gen_day_infos () -> DayInfos:
