@@ -43,7 +43,7 @@ def gen_day_infos () -> DayInfos:
   dayInfos : DayInfos = {}
   for player, days in playerInfos.items():
     if days is None:
-      break
+      continue
     for day in days:
       if day not in dayInfos:
         dayInfos[day] = set([])
