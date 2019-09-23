@@ -130,12 +130,33 @@ def test_check_solution() -> None:
 
 def choose_random_solution(parseInfo: ParseInfo) -> Solution:
     solution = {}
-    maxTables = int(len(parseInfo) / 4) + 1
+    nDays = 0
+    for player in parseInfo:
+        score, daysOk = parseInfo[player]
+        nDays = len(daysOk)
+        break
+
+    tableSizeDay : Dict[Day, Dict[Table, int]] = {day: {} for day in range(nDays)}
+    tableCounterDay : Dict[Day, Table] = {day: 0 for day in range(nDays)}
+
     for player in parseInfo:
         score, daysOk = parseInfo[player]
         availableDays: List[Day] = [day for day, ok in enumerate(daysOk) if ok]
         day = rng.choice(availableDays)
-        table = rng.randint(1, maxTables)
+
+        tableSize = tableSizeDay[day]
+        tableCounter = tableCounterDay[day]
+
+        if len(tableSize) == 0:
+            tableSize[tableCounter] = 0
+            tableCounterDay[day] += 1
+        table = rng.choice(list(tableSize.keys()))
+        tableSize[table] += 1
+        if tableSize[table] == 6:
+            tableSize.pop(table)
+
+        table += 100*day # FIXME - terrible hack for ensuring tables of different days do not overlap..
+
         solution[player] = (day, table)
     return solution
 
@@ -163,11 +184,13 @@ while True: # do-while
         if check_solution(parseInfo, solution, 1):
             break
     elif count <= 30000:
+        if check_solution(parseInfo, solution, 2):
+            break
+    elif count <= 40000:
         if check_solution(parseInfo, solution, 3):
             break
     else:
         print("Could not find a solution :-(")
-        solution = None
         break
     count += 1
 
