@@ -2,9 +2,6 @@
 import argparse
 from typing import *
 
-# https://pypi.org/project/python-constraint/
-from constraint import Problem # type: ignore
-
 Name = str
 Score = float
 DaysOk = List[bool]
@@ -43,19 +40,8 @@ Table = int
 PlayerAssign = Tuple[Day, Table]
 Solution = Dict[Name, PlayerAssign]
 
-def check_all_table_size(*tables: Table) -> bool:
-    tableSize: Dict[Table, int] = {}
-    for table in tables:
-        if table not in tableSize:
-            tableSize[table] = 0
-        tableSize[table] += 1
-    for table in tableSize:
-        if not (4 <= tableSize[table] <= 6):
-            return False
-    return True
 
-
-def check_solution(parseInfo: ParseInfo, solution: Solution) -> bool:
+def check_solution(parseInfo: ParseInfo, solution: Solution, rankDiff: Optional[int] = None) -> bool:
     # 1) All players that are available for a day, should have an assignment
     for player in parseInfo:
         _, daysOk = parseInfo[player]
@@ -72,31 +58,41 @@ def check_solution(parseInfo: ParseInfo, solution: Solution) -> bool:
             return False
 
     # 3) Each table should have 4 to 6 players
-    if not check_all_table_size(*[solution[player][1] for player in solution]):
-        return False
+    tableSize: Dict[Table, int] = {}
+    for player in solution:
+        table, _ = solution[player]
+        if table not in tableSize:
+            tableSize[table] = 0
+        tableSize[table] += 1
+    for table in tableSize:
+        if not (4 <= tableSize[table] <= 6):
+            return False
+
+    # 4) Check that the rank difference of a table does not exceed RankDiff
+    if rankDiff:
+        tableRankRange: Dict[Table, Tuple[int, int]] = {}
+        for player in solution:
+            table, _ = solution[player]
+            score, _ = parseInfo[player]
+            rank = score_to_rank(score)
+            if table not in tableRankRange:
+                tableRankRange[table] = (rank, rank)
+
+            rankRange = tableRankRange[table]
+            if rank < rankRange[0]:
+                rankRange = (rank, rankRange[1])
+            elif rank > rankRange[1]:
+                rankRange = (rankRange[0], rank)
+            tableRankRange[table] = rankRange
+
+        for table in tableRankRange:
+            rankRange = tableRankRange[table]
+            tableDiff = rankRange[1] - rankRange[0]
+            if tableDiff > rankDiff:
+                return False
 
     return True
 
-
-def construct_problem(parseInfo: ParseInfo) -> Problem:
-    problem = Problem()
-    players = []
-    for player in parseInfo:
-        score, daysOk = parseInfo[player]
-        if not any(daysOk):
-            continue
-        players.append(player)
-
-        rank = score_to_rank(score)
-        problem.addVariable(player + "/day", range(len(daysOk)))
-        problem.addVariable(player + "/table", range(int(len(parseInfo) / 4) + 1)) # ceil
-
-        # The day should be in daysOk
-        problem.addConstraint(lambda d: daysOk[d], (player + "/day",))
-
-    # Each table should have 4 to 6 players
-    problem.addConstraint(check_all_table_size, tuple([player + "/table" for player in players]))
-    return problem
 
 parser = argparse.ArgumentParser()
 parser.add_argument("file")
@@ -107,5 +103,3 @@ with open(args.file, 'r') as f:
 
 print(parseInfo)
 
-problem = construct_problem(parseInfo)
-print(problem.getSolutions())
