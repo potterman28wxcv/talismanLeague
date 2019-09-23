@@ -1,6 +1,13 @@
 #!/usr/bin/python3.6
 import argparse
 from typing import *
+import random as rd
+import sys
+
+seed = rd.randrange(sys.maxsize)
+seed = 4209056135191916808
+rng = rd.Random(seed)
+print("Seed:", seed)
 
 Name = str
 Score = float
@@ -15,6 +22,8 @@ def parse_file (f) -> ParseInfo:
         name = ''.join(words[0:-3]).replace('{', '').replace('}', '').replace('|', '')
         score = float(words[-3])
         daysOk = [bool(words[-2]), bool(words[-1])]
+        if not any(daysOk):
+            continue
 
         assert(name not in parseInfo)
         parseInfo[name] = (score, daysOk)
@@ -45,8 +54,6 @@ def _check_solution(parseInfo: ParseInfo, solution: Solution, rankDiff: Optional
     # 1) All players that are available for a day, should have an assignment
     for player in parseInfo:
         _, daysOk = parseInfo[player]
-        if not any(daysOk):
-            continue
         if player not in solution:
             return -1
 
@@ -121,15 +128,47 @@ def test_check_solution() -> None:
     print("All good!")
 
 
+def choose_random_solution(parseInfo: ParseInfo) -> Solution:
+    solution = {}
+    maxTables = int(len(parseInfo) / 4) + 1
+    for player in parseInfo:
+        score, daysOk = parseInfo[player]
+        availableDays: List[Day] = [day for day, ok in enumerate(daysOk) if ok]
+        day = rng.choice(availableDays)
+        table = rng.randint(1, maxTables)
+        solution[player] = (day, table)
+    return solution
+
+
 parser = argparse.ArgumentParser()
 parser.add_argument("file")
 args = parser.parse_args()
 
 if args.file == "test":
     test_check_solution()
-else:
-    with open(args.file, 'r') as f:
-        parseInfo = parse_file(f)
+    sys.exit(0)
 
-    print(parseInfo)
+with open(args.file, 'r') as f:
+    parseInfo = parse_file(f)
 
+print(parseInfo)
+
+count=0
+while True: # do-while
+    solution = choose_random_solution(parseInfo)
+    if count <= 10000:
+        if check_solution(parseInfo, solution, 0):
+            break
+    elif count <= 20000:
+        if check_solution(parseInfo, solution, 1):
+            break
+    elif count <= 30000:
+        if check_solution(parseInfo, solution, 3):
+            break
+    else:
+        print("Could not find a solution :-(")
+        solution = None
+        break
+    count += 1
+
+print(solution)
