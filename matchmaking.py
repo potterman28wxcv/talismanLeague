@@ -160,7 +160,6 @@ def group_and_assign(partial: Solution, group: List[Name], tableCount: int) -> i
 def update_solution_fixed_day(parseInfo: ParseInfo, partial: Solution, day: Day,
                               tableCount: int) -> int:
     byRank : Dict[int, List[Name]] = {}
-    tableCount = 0
     for player in parseInfo:
         score, _ = parseInfo[player]
         rank = score_to_rank(score)
