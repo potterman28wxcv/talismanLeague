@@ -105,18 +105,18 @@ def test_check_solution() -> None:
     assert(_check_solution(parseInfo, solution, 0) == 0) # success
 
     solution = {"toto": (1, 0), "tata": (1, 0), "lolo": (1, 0)}
-    assert(not _check_solution(parseInfo, solution, 0) == -1) # fail 1)
+    assert(_check_solution(parseInfo, solution, 0) == -1) # fail 1)
 
     solution = {"toto": (0, 0), "titi": (0, 0), "tata": (0, 0), "lolo": (0, 0)}
-    assert(not _check_solution(parseInfo, solution, 0) == -2) # fail 2)
+    assert(_check_solution(parseInfo, solution, 0) == -2) # fail 2)
 
     parseInfo = {"toto": (0., [False, True]), "titi": (0., [False, True]), "tata": (0., [False, True])}
     solution = {"toto": (1, 0), "titi": (1, 0), "tata": (1, 0)}
-    assert(not _check_solution(parseInfo, solution, 0) == -3) # fail 3)
+    assert(_check_solution(parseInfo, solution, 0) == -3) # fail 3)
 
     parseInfo = {"toto": (10., [False, True]), "titi": (0., [False, True]), "tata": (0., [False, True]), "lolo": (0., [True, True])}
     solution = {"toto": (1, 0), "titi": (1, 0), "tata": (1, 0), "lolo": (1, 0)}
-    assert(not _check_solution(parseInfo, solution, 0) == -4) # fail 4)
+    assert(_check_solution(parseInfo, solution, 0) == -4) # fail 4)
 
     print("All good!")
 
