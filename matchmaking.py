@@ -4,10 +4,15 @@ from typing import *
 import random as rd
 import sys
 
+# https://pypi.org/project/recordclass/
+from recordclass import recordclass, RecordClass # type: ignore
+
 seed = rd.randrange(sys.maxsize)
 seed = 4209056135191916808
 rng = rd.Random(seed)
 print("Seed:", seed)
+
+nDays = 2 # number of available days
 
 Name = str
 Score = float
@@ -46,7 +51,10 @@ def score_to_rank(s: Score) -> Rank:
 
 Day = int
 Table = int
-PlayerAssign = Tuple[Day, Table]
+class PlayerAssign(RecordClass):
+    day: Day
+    table: Table
+PA = PlayerAssign
 Solution = Dict[Name, PlayerAssign]
 
 
@@ -108,56 +116,84 @@ def check_solution(parseInfo: ParseInfo, solution: Solution, rankDiff: Optional[
 def test_check_solution() -> None:
     parseInfo = {"toto": (0., [False, True]), "titi": (0., [False, True]), "tata": (0., [False, True]), "lolo": (0., [True, True])}
 
-    solution = {"toto": (1, 0), "titi": (1, 0), "tata": (1, 0), "lolo": (1, 0)}
+    solution = {"toto": PA(1, 0), "titi": PA(1, 0), "tata": PA(1, 0), "lolo": PA(1, 0)}
     assert(_check_solution(parseInfo, solution, 0) == 0) # success
 
-    solution = {"toto": (1, 0), "tata": (1, 0), "lolo": (1, 0)}
+    solution = {"toto": PA(1, 0), "tata": PA(1, 0), "lolo": PA(1, 0)}
     assert(_check_solution(parseInfo, solution, 0) == -1) # fail 1)
 
-    solution = {"toto": (0, 0), "titi": (0, 0), "tata": (0, 0), "lolo": (0, 0)}
+    solution = {"toto": PA(0, 0), "titi": PA(0, 0), "tata": PA(0, 0), "lolo": PA(0, 0)}
     assert(_check_solution(parseInfo, solution, 0) == -2) # fail 2)
 
     parseInfo = {"toto": (0., [False, True]), "titi": (0., [False, True]), "tata": (0., [False, True])}
-    solution = {"toto": (1, 0), "titi": (1, 0), "tata": (1, 0)}
+    solution = {"toto": PA(1, 0), "titi": PA(1, 0), "tata": PA(1, 0)}
     assert(_check_solution(parseInfo, solution, 0) == -3) # fail 3)
 
     parseInfo = {"toto": (10., [False, True]), "titi": (0., [False, True]), "tata": (0., [False, True]), "lolo": (0., [True, True])}
-    solution = {"toto": (1, 0), "titi": (1, 0), "tata": (1, 0), "lolo": (1, 0)}
+    solution = {"toto": PA(1, 0), "titi": PA(1, 0), "tata": PA(1, 0), "lolo": PA(1, 0)}
     assert(_check_solution(parseInfo, solution, 0) == -4) # fail 4)
 
     print("All good!")
 
 
+def selectBestDivider(n: int, li: List[int]) -> int:
+    bestResult = None
+    for divider in li:
+        result = n % divider
+        if bestResult is None or result < bestResult:
+            bestResult = result
+            bestDivider = divider
+    return bestDivider
+
+
+def group_and_assign(partial: Solution, group: List[Name], tableCount: int) -> int:
+    bestDivider = selectBestDivider(len(group), list(range(4, 6+1)))
+    while len(group) >= bestDivider:
+        for i in range(bestDivider):
+            chosen = rng.choice(group)
+            group.remove(chosen)
+            partial[chosen][1] = tableCount
+        tableCount += 1
+    return tableCount
+
+
+def update_solution_fixed_day(parseInfo: ParseInfo, partial: Solution, day: Day,
+                              tableCount: int) -> int:
+    byRank : Dict[int, List[Name]] = {}
+    tableCount = 0
+    for player in parseInfo:
+        score, _ = parseInfo[player]
+        rank = score_to_rank(score)
+        if rank not in byRank:
+            byRank[rank] = []
+        byRank[rank].append(player)
+
+    for rank in byRank:
+        tableCount = group_and_assign(partial, byRank[rank], tableCount)
+
+    remaining: List[Name] = []
+    for rank in byRank:
+        remaining += byRank[rank]
+
+    tableCount = group_and_assign(partial, remaining, tableCount)
+    return tableCount
+
+
+def update_solution_fixed_days(parseInfo: ParseInfo, partial: Solution) -> None:
+    tableCount = 0
+    for day in range(nDays):
+        tableCount = update_solution_fixed_day(parseInfo, partial, day, tableCount)
+
+
 def choose_random_solution(parseInfo: ParseInfo) -> Solution:
     solution = {}
-    nDays = 0
-    for player in parseInfo:
-        score, daysOk = parseInfo[player]
-        nDays = len(daysOk)
-        break
-
-    tableSizeDay : Dict[Day, Dict[Table, int]] = {day: {} for day in range(nDays)}
-    tableCounterDay : Dict[Day, Table] = {day: 0 for day in range(nDays)}
 
     for player in parseInfo:
         score, daysOk = parseInfo[player]
         availableDays: List[Day] = [day for day, ok in enumerate(daysOk) if ok]
         day = rng.choice(availableDays)
-
-        tableSize = tableSizeDay[day]
-        tableCounter = tableCounterDay[day]
-
-        if len(tableSize) == 0:
-            tableSize[tableCounter] = 0
-            tableCounterDay[day] += 1
-        table = rng.choice(list(tableSize.keys()))
-        tableSize[table] += 1
-        if tableSize[table] == 6:
-            tableSize.pop(table)
-
-        table += 100*day # FIXME - terrible hack for ensuring tables of different days do not overlap..
-
-        solution[player] = (day, table)
+        solution[player] = PA(day, -1)
+    update_solution_fixed_days(parseInfo, solution)
     return solution
 
 
