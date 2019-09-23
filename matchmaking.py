@@ -2,18 +2,30 @@
 import argparse
 from typing import *
 
-class PlayerInfo:
-  def __init__(self, score: int, daysOk: List[bool]):
-    self.score = score
-    self.daysOk = daysOk
-
 Name = str
+Score = float
+DaysOk = List[bool]
+PlayerInfo = Tuple[Score, DaysOk]
 ParseInfo = Dict[Name, PlayerInfo]
-def parse (filename: str) -> ParseInfo:
-  return {}
+
+def parse_file (f) -> ParseInfo:
+    parseInfo: ParseInfo = {}
+    for line in f:
+        words = line.split(' ')
+        name = ''.join(words[0:-3])
+        score = float(words[-3])
+        daysOk = [bool(words[-2]), bool(words[-1])]
+
+        assert(name not in parseInfo)
+        parseInfo[name] = (score, daysOk)
+    return parseInfo
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument("file")
 args = parser.parse_args()
 
-print(parse(args.file))
+with open(args.file, 'r') as f:
+    parseInfos = parse_file(f)
+
+print(parseInfos)
