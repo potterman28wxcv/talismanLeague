@@ -69,7 +69,7 @@ def _check_solution(parseInfo: ParseInfo, solution: Solution, rankDiff: Optional
             return -3
 
     # 4) Check that the rank difference of a table does not exceed RankDiff
-    if rankDiff:
+    if rankDiff is not None:
         tableRankRange: Dict[Table, Tuple[int, int]] = {}
         for player in solution:
             table, _ = solution[player]
