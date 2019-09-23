@@ -161,6 +161,8 @@ def update_solution_fixed_day(parseInfo: ParseInfo, partial: Solution, day: Day,
                               tableCount: int) -> int:
     byRank : Dict[int, List[Name]] = {}
     for player in parseInfo:
+        if partial[player].day != day:
+            continue
         score, _ = parseInfo[player]
         rank = score_to_rank(score)
         if rank not in byRank:
@@ -196,6 +198,19 @@ def choose_random_solution(parseInfo: ParseInfo) -> Solution:
     return solution
 
 
+def print_solution(solution: Solution) -> None:
+    tables : Dict[int, Tuple[Day, List[Name]]] = {}
+    for player in solution:
+        day, table = solution[player]
+        if table not in tables:
+            tables[table] = (day, [])
+        tables[table][1].append(player)
+
+    for table in tables:
+        print("Table", table, "of day", tables[table][0])
+        for player in tables[table][1]:
+            print("\t", player)
+
 parser = argparse.ArgumentParser()
 parser.add_argument("file")
 args = parser.parse_args()
@@ -229,4 +244,4 @@ while True: # do-while
         break
     count += 1
 
-print(solution)
+print_solution(solution)
