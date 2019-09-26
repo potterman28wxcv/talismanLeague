@@ -106,6 +106,9 @@ def _check_solution(parseInfo: ParseInfo, solution: Solution, rankDiff: Optional
             if tableDiff > rankDiff:
                 return -4
 
+    # 5) Each player should not be allocated to more than one table
+    # --> already guaranteed by the dictionary structure
+
     return 0
 
 
@@ -136,69 +139,8 @@ def test_check_solution() -> None:
     print("All good!")
 
 
-def selectBestDivider(n: int, li: List[int]) -> int:
-    bestResult = None
-    for divider in li:
-        result = n % divider
-        if bestResult is None or result < bestResult:
-            bestResult = result
-            bestDivider = divider
-    return bestDivider
-
-
-def group_and_assign(partial: Solution, group: List[Name], tableCount: int) -> int:
-    bestDivider = selectBestDivider(len(group), list(range(4, 6+1)))
-    while len(group) >= bestDivider:
-        for i in range(bestDivider):
-            chosen = rng.choice(group)
-            group.remove(chosen)
-            partial[chosen][1] = tableCount
-        tableCount += 1
-    return tableCount
-
-
-def update_solution_fixed_day(parseInfo: ParseInfo, partial: Solution, day: Day,
-                              tableCount: int) -> int:
-    byRank : Dict[int, List[Name]] = {}
-    for player in parseInfo:
-        if partial[player].day != day:
-            continue
-        score, _ = parseInfo[player]
-        rank = score_to_rank(score)
-        if rank not in byRank:
-            byRank[rank] = []
-        byRank[rank].append(player)
-
-    for rank in byRank:
-        tableCount = group_and_assign(partial, byRank[rank], tableCount)
-
-    remaining: List[Name] = []
-    for rank in byRank:
-        remaining += byRank[rank]
-
-    tableCount = group_and_assign(partial, remaining, tableCount)
-    return tableCount
-
-
-def update_solution_fixed_days(parseInfo: ParseInfo, partial: Solution) -> None:
-    tableCount = 0
-    for day in range(nDays):
-        tableCount = update_solution_fixed_day(parseInfo, partial, day, tableCount)
-
-
-def choose_random_solution(parseInfo: ParseInfo) -> Solution:
-    solution = {}
-
-    for player in parseInfo:
-        score, daysOk = parseInfo[player]
-        availableDays: List[Day] = [day for day, ok in enumerate(daysOk) if ok]
-        day = rng.choice(availableDays)
-        solution[player] = PA(day, -1)
-    update_solution_fixed_days(parseInfo, solution)
-    return solution
-
-
 def print_solution(solution: Solution) -> None:
+    print(20*"#" + " solution " + 20*"#")
     tables : Dict[int, Tuple[Day, List[Name]]] = {}
     for player in solution:
         day, table = solution[player]
@@ -210,6 +152,55 @@ def print_solution(solution: Solution) -> None:
         print("Table", table, "of day", tables[table][0])
         for player in tables[table][1]:
             print("\t", player)
+
+## Heuristic to compute the solution.
+#
+# The principle is to follow a partial ordering of the players, and then try
+# to form contiguous groups out of that ordering.
+#
+# This ordering is such that two properties are ensured:
+# 1) Players of same rank are contiguous
+# 2) Within each even rank, the Day 1 only players are at the top while the
+#    Day 2 only players are at the bottom. For each odd rank, it's the opposite:
+#    Day 1 players at the bottom, Day 2 players at the top.
+#    These two days are selected at random so that no particular day is biased.
+#
+# Since we represent this partial ordering with a totally ordered list, we also
+# insert randomness into each equivalence class.
+#
+# This alternation is to ease the group making of people of different ranks,
+# when the numbers are not ideal to work with. It introduces a potential bias
+# though: the players who select both days will have more probability to be
+# found in a table of the same rank as them, than those who only select one day.
+#
+# Those who only select one day will sometimes find themselves in a table of higher
+# rank, sometimes in lower rank, but since we select Day 1 and Day 2 randomly,
+# normally this shouldn't introduce any significant bias.
+#
+# Also, this particular algorithm becomes irrelevant if more than 2 days are
+# available.. While I think it could be generalized, right now it's not worth
+# the trouble.
+##
+
+def order_players(parseInfo: ParseInfo, day1: int) -> List[Name]:
+    return []
+
+
+def cut_by_four(n: int) -> List[int]:
+    return []
+
+
+def contiguous_gather(parseInfo: ParseInfo, sizes: List[int]) -> Solution:
+    return {}
+
+
+def compute_solution(parseInfo: ParseInfo) -> Solution:
+    day1 = rng.randint(0, 1)
+    ordered = order_players(parseInfo, day1)
+    group_sizes = cut_by_four(len(ordered))
+    solution = contiguous_gather(parseInfo, group_sizes)
+    return solution
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument("file")
@@ -224,24 +215,91 @@ with open(args.file, 'r') as f:
 
 print(parseInfo)
 
-count=0
-while True: # do-while
-    solution = choose_random_solution(parseInfo)
-    if count <= 10000:
-        if check_solution(parseInfo, solution, 0):
-            break
-    elif count <= 20000:
-        if check_solution(parseInfo, solution, 1):
-            break
-    elif count <= 30000:
-        if check_solution(parseInfo, solution, 2):
-            break
-    elif count <= 40000:
-        if check_solution(parseInfo, solution, 3):
-            break
-    else:
-        print("Could not find a solution :-(")
-        break
-    count += 1
-
+solution = compute_solution(parseInfo)
 print_solution(solution)
+
+if not check_solution(parseInfo, solution):
+    print("/!\\ The solution is not valid /!\\")
+
+## OLD RANDOM VERSION
+#def selectBestDivider(n: int, li: List[int]) -> int:
+#    bestResult = None
+#    for divider in li:
+#        result = n % divider
+#        if bestResult is None or result < bestResult:
+#            bestResult = result
+#            bestDivider = divider
+#    return bestDivider
+#
+#
+#def group_and_assign(partial: Solution, group: List[Name], tableCount: int) -> int:
+#    bestDivider = selectBestDivider(len(group), list(range(4, 6+1)))
+#    while len(group) >= bestDivider:
+#        for i in range(bestDivider):
+#            chosen = rng.choice(group)
+#            group.remove(chosen)
+#            partial[chosen][1] = tableCount
+#        tableCount += 1
+#    return tableCount
+#
+#
+#def update_solution_fixed_day(parseInfo: ParseInfo, partial: Solution, day: Day,
+#                              tableCount: int) -> int:
+#    byRank : Dict[int, List[Name]] = {}
+#    for player in parseInfo:
+#        if partial[player].day != day:
+#            continue
+#        score, _ = parseInfo[player]
+#        rank = score_to_rank(score)
+#        if rank not in byRank:
+#            byRank[rank] = []
+#        byRank[rank].append(player)
+#
+#    for rank in byRank:
+#        tableCount = group_and_assign(partial, byRank[rank], tableCount)
+#
+#    remaining: List[Name] = []
+#    for rank in byRank:
+#        remaining += byRank[rank]
+#
+#    tableCount = group_and_assign(partial, remaining, tableCount)
+#    return tableCount
+#
+#
+#def update_solution_fixed_days(parseInfo: ParseInfo, partial: Solution) -> None:
+#    tableCount = 0
+#    for day in range(nDays):
+#        tableCount = update_solution_fixed_day(parseInfo, partial, day, tableCount)
+#
+#
+#def choose_random_solution(parseInfo: ParseInfo) -> Solution:
+#    solution = {}
+#
+#    for player in parseInfo:
+#        score, daysOk = parseInfo[player]
+#        availableDays: List[Day] = [day for day, ok in enumerate(daysOk) if ok]
+#        day = rng.choice(availableDays)
+#        solution[player] = PA(day, -1)
+#    update_solution_fixed_days(parseInfo, solution)
+#    return solution
+
+#count=0
+#while True: # do-while
+#    solution = choose_random_solution(parseInfo)
+#    if count <= 10000:
+#        if check_solution(parseInfo, solution, 0):
+#            break
+#    elif count <= 20000:
+#        if check_solution(parseInfo, solution, 1):
+#            break
+#    elif count <= 30000:
+#        if check_solution(parseInfo, solution, 2):
+#            break
+#    elif count <= 40000:
+#        if check_solution(parseInfo, solution, 3):
+#            break
+#    else:
+#        print("Could not find a solution :-(")
+#        break
+#    count += 1
+
