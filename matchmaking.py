@@ -274,6 +274,7 @@ def contiguous_gather_fixed(parseInfo: ParseInfo, players: List[Name],
             solution[player] = PA(tableDay, table)
 
         table += 1
+        currentPlayerIndex += len(tablePlayers)
     return solution
 
 
