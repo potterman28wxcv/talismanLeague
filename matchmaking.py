@@ -31,7 +31,7 @@ def parse_file (f) -> ParseInfo:
         words = line.split(' ')
         name = ''.join(words[0:-3]).replace('{', '').replace('}', '').replace('|', '')
         score = float(words[-3])
-        daysOk = [bool(words[-2]), bool(words[-1])]
+        daysOk = [bool(int(words[-2])), bool(int(words[-1]))]
         if not any(daysOk):
             continue
 
