@@ -239,9 +239,41 @@ def cut_by_four(n: int) -> List[int]:
     return L
 
 
+def get_days(daysOk: List[bool]) -> List[Day]:
+    return [day for day in [0, 1] if daysOk[day]]
+
+
 def contiguous_gather_fixed(parseInfo: ParseInfo, players: List[Name],
                             orderedSizes: Tuple[int, ...]) -> Optional[Solution]:
-    return None
+    solution = {}
+    table = 0
+    currentPlayerIndex = 0
+    for tableSize in orderedSizes:
+        tablePlayers = []
+        tableDay = None
+        for i in range(tableSize):
+            player = players[currentPlayerIndex + i]
+            # Checking/setting the day
+            availableDays = get_days(parseInfo[player].daysOk)
+            assert(0 < len(availableDays) <= 2)
+            if tableDay is None:
+                if len(availableDays) == 1:
+                    tableDay = availableDays[0]
+            else:
+                if len(availableDays) == 1 and availableDays[0] != tableDay:
+                    return None
+            tablePlayers.append(player)
+
+        # Randomizing the day if it wasn't set
+        if tableDay is None:
+            tableDay = rng.randint(0, 1)
+
+        # Adding each player to the solution
+        for player in tablePlayers:
+            solution[player] = PA(tableDay, table)
+
+        table += 1
+    return solution
 
 
 def select_best_solution(solutions: List[Solution]) -> Solution:
