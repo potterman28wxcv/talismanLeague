@@ -319,10 +319,10 @@ def contiguous_gather(parseInfo: ParseInfo, players: List[Name],
         if orderedSizes in computed:
             break
         solution = contiguous_gather_fixed(parseInfo, players, orderedSizes)
+        computed.add(orderedSizes)
         if solution is None:
             continue
         solutions.append(solution)
-        computed.add(orderedSizes)
     return select_best_solution(parseInfo, solutions)
 
 
