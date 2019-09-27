@@ -18,7 +18,10 @@ nDays = 2 # number of available days
 Name = str
 Score = float
 DaysOk = List[bool]
-PlayerInfo = Tuple[Score, DaysOk]
+class PlayerInfo(RecordClass):
+    score: Score
+    daysOk: DaysOk
+PI = PlayerInfo
 ParseInfo = Dict[Name, PlayerInfo]
 
 def parse_file (f) -> ParseInfo:
@@ -32,7 +35,7 @@ def parse_file (f) -> ParseInfo:
             continue
 
         assert(name not in parseInfo)
-        parseInfo[name] = (score, daysOk)
+        parseInfo[name] = PI(score, daysOk)
     return parseInfo
 
 Rank = int
@@ -118,7 +121,7 @@ def check_solution(parseInfo: ParseInfo, solution: Solution, rankDiff: Optional[
 
 
 def test_check_solution() -> None:
-    parseInfo = {"toto": (0., [False, True]), "titi": (0., [False, True]), "tata": (0., [False, True]), "lolo": (0., [True, True])}
+    parseInfo = {"toto": PI(0., [False, True]), "titi": PI(0., [False, True]), "tata": PI(0., [False, True]), "lolo": PI(0., [True, True])}
 
     solution = {"toto": PA(1, 0), "titi": PA(1, 0), "tata": PA(1, 0), "lolo": PA(1, 0)}
     assert(_check_solution(parseInfo, solution, 0) == 0) # success
@@ -129,11 +132,11 @@ def test_check_solution() -> None:
     solution = {"toto": PA(0, 0), "titi": PA(0, 0), "tata": PA(0, 0), "lolo": PA(0, 0)}
     assert(_check_solution(parseInfo, solution, 0) == -2) # fail 2)
 
-    parseInfo = {"toto": (0., [False, True]), "titi": (0., [False, True]), "tata": (0., [False, True])}
+    parseInfo = {"toto": PI(0., [False, True]), "titi": PI(0., [False, True]), "tata": PI(0., [False, True])}
     solution = {"toto": PA(1, 0), "titi": PA(1, 0), "tata": PA(1, 0)}
     assert(_check_solution(parseInfo, solution, 0) == -3) # fail 3)
 
-    parseInfo = {"toto": (10., [False, True]), "titi": (0., [False, True]), "tata": (0., [False, True]), "lolo": (0., [True, True])}
+    parseInfo = {"toto": PI(10., [False, True]), "titi": PI(0., [False, True]), "tata": PI(0., [False, True]), "lolo": PI(0., [True, True])}
     solution = {"toto": PA(1, 0), "titi": PA(1, 0), "tata": PA(1, 0), "lolo": PA(1, 0)}
     assert(_check_solution(parseInfo, solution, 0) == -4) # fail 4)
 
