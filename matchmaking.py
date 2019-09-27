@@ -182,15 +182,62 @@ def print_solution(solution: Solution) -> None:
 # the trouble.
 ##
 
-def order_players(parseInfo: ParseInfo, day1: int) -> List[Name]:
-    return []
+bothDays = -1
+RankGroups = Dict[Rank, Dict[Union[Day,int], List[Name]]]
+
+def construct_rank_groups(parseInfo: ParseInfo) -> RankGroups:
+    rg: RankGroups = {}
+    for player in parseInfo:
+        score, da = parseInfo[player]
+        rank = score_to_rank(score)
+        if rank not in rg:
+            rg[rank] = {}
+            for day in [-1, 0, 1]:
+                rg[rank][day] = []
+        if da == [True, True]:
+            rg[rank][-1].append(player)
+        elif da == [True, False]:
+            rg[rank][0].append(player)
+        elif da == [False, True]:
+            rg[rank][1].append(player)
+    return rg
 
 
+def randomize_rank_groups(rankGroups: RankGroups) -> None:
+    for rank in rankGroups:
+        for day in rankGroups[rank]:
+            rng.shuffle(rankGroups[rank][day])
+    return
+
+
+def order_players(parseInfo: ParseInfo, day1: Day) -> List[Name]:
+    rankGroups = construct_rank_groups(parseInfo)
+    randomize_rank_groups(rankGroups)
+    ordered = []
+    for rank in sorted(rankGroups.keys(), reverse=True):
+        ordered.extend(rankGroups[rank][day1])
+        ordered.extend(rankGroups[rank][bothDays])
+        ordered.extend(rankGroups[rank][1-day1])
+        day1 = 1-day1
+    return ordered
+
+
+# Example: cut_by_four(15)
 def cut_by_four(n: int) -> List[int]:
-    return []
+    nPerfect = int(n/4) # 3
+    L = [4] * nPerfect # [4, 4, 4]
+    L.append(n - nPerfect) # [4, 4, 4, 3]
+    if L[-1] < 4: # yes
+        for i in range(L[-1]): # range is [0, 1, 2]
+            L[i] += 1
+        # after the loop: [5, 5, 5, 3]
+        L.pop(len(L) - 1) # [5, 5, 5]
+    return L
 
 
+# Forms a solution by gathering from top to bottom.
 def contiguous_gather(parseInfo: ParseInfo, sizes: List[int]) -> Solution:
+    remaining = sorted(sizes)
     return {}
 
 
