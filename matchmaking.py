@@ -344,7 +344,16 @@ if args.file == "test":
 with open(args.file, 'r') as f:
     parseInfo = parse_file(f)
 
-print(parseInfo)
+# Some debug prints
+print({player: parseInfo[player].score for player in parseInfo})
+print({player: parseInfo[player].daysOk for player in parseInfo})
+day1Only = [player for player in parseInfo if parseInfo[player].daysOk == [True, False]]
+day2Only = [player for player in parseInfo if parseInfo[player].daysOk == [False, True]]
+day12 = [player for player in parseInfo if parseInfo[player].daysOk == [True, True]]
+print("day1 only:", day1Only)
+print("day2 only:", day2Only)
+print("both days:", day12)
+print(80*"-")
 
 solution = compute_solution(parseInfo)
 if solution is None:
