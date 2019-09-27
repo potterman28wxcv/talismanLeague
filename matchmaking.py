@@ -329,11 +329,65 @@ def contiguous_gather(parseInfo: ParseInfo, players: List[Name],
     return select_best_solution(parseInfo, solutions)
 
 
+##
+# Last resort matchmaking. Just packs players based on their days, and splits
+# the "both days" players randomly where there is still room
+# Can still fail if there is no solution at all, in which case the matchmaking should
+# be done manually by the organizer
+##
+def random_solution(parseInfo: ParseInfo) -> Optional[Solution]:
+    solution: Solution = {}
+    players = list(parseInfo.keys())
+    rng.shuffle(players)
+    tableSizes = cut_by_four(len(players))
+    tables = [[[None] * tableSize, None] for tableSize in tableSizes]
+    for player in players:
+        for ti, table in enumerate(tables):
+            slots, day = table
+            attributedSlot = False
+            if day is None or day in get_days(parseInfo[player].daysOk):
+                for i, slot in enumerate(slots): # type: ignore
+                    if slot == None:
+                        tables[ti][0][i] = player # type: ignore
+                        daysOk = get_days(parseInfo[player].daysOk)
+                        assert(0 < len(daysOk) <= 2)
+                        if len(daysOk) == 1:
+                            tables[ti][1] = daysOk[0] # type: ignore
+                        attributedSlot = True
+                        break
+            if attributedSlot:
+                break
+
+    for ti, table in enumerate(tables):
+        slots, day = table
+        if day is None:
+            day = rng.randint(0, 1) # type: ignore
+        for player in slots: # type: ignore
+            if player is None:
+                return None
+            else:
+                solution[player] = PA(day, ti)
+
+    return solution
+
+
+##
+# Attempts a solution with a random day as "top day"
+# If no solution was found, try the other day
+# If still no solution, call the random_solution which just randomizes
+# regardless of score
+##
 def compute_solution(parseInfo: ParseInfo) -> Optional[Solution]:
     day1 = rng.randint(0, 1)
     ordered = order_players(parseInfo, day1)
     group_sizes = cut_by_four(len(ordered))
     solution = contiguous_gather(parseInfo, ordered, group_sizes)
+    if solution is None:
+        ordered2 = order_players(parseInfo, 1-day1)
+        solution = contiguous_gather(parseInfo, ordered2, group_sizes)
+    if solution is None:
+        print("Smart contiguous_gather failed, returning a random solution instead")
+        solution = random_solution(parseInfo)
     return solution
 
 
@@ -350,7 +404,6 @@ with open(args.file, 'r') as f:
 
 # Some debug prints
 print({player: parseInfo[player].score for player in parseInfo})
-print({player: parseInfo[player].daysOk for player in parseInfo})
 day1Only = [player for player in parseInfo if parseInfo[player].daysOk == [True, False]]
 day2Only = [player for player in parseInfo if parseInfo[player].daysOk == [False, True]]
 day12 = [player for player in parseInfo if parseInfo[player].daysOk == [True, True]]
