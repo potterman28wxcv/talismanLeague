@@ -1,6 +1,7 @@
 #!/usr/bin/python3.6
 import argparse
 from typing import *
+from itertools import permutations
 import random as rd
 import sys
 
@@ -235,10 +236,26 @@ def cut_by_four(n: int) -> List[int]:
     return L
 
 
-# Forms a solution by gathering from top to bottom.
-def contiguous_gather(parseInfo: ParseInfo, sizes: List[int]) -> Solution:
-    remaining = sorted(sizes)
+def contiguous_gather_fixed(parseInfo: ParseInfo,
+                            orderedSizes: Tuple[int, ...]) -> Solution:
     return {}
+
+
+def select_best_solution(solutions: List[Solution]) -> Solution:
+    return {}
+
+
+# Forms a solution by gathering from top to bottom.
+# It tries one solution per permutation of sizes, then takes the best
+def contiguous_gather(parseInfo: ParseInfo, sizes: List[int]) -> Solution:
+    computed: Set[Tuple[int, ...]] = set()
+    solutions: List[Solution] = []
+    for orderedSizes in permutations(sizes):
+        if orderedSizes in computed:
+            break
+        solutions.append(contiguous_gather_fixed(parseInfo, orderedSizes))
+        computed.add(orderedSizes)
+    return select_best_solution(solutions)
 
 
 def compute_solution(parseInfo: ParseInfo) -> Solution:
