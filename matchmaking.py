@@ -227,16 +227,19 @@ def order_players(parseInfo: ParseInfo, day1: Day) -> List[Name]:
     return ordered
 
 
-# Example: cut_by_four(15)
+# Example: cut_by_four(11)
 def cut_by_four(n: int) -> List[int]:
-    nPerfect = int(n/4) # 3
-    L = [4] * nPerfect # [4, 4, 4]
-    L.append(n - nPerfect*4) # [4, 4, 4, 3]
+    nPerfect = int(n/4) # 2
+    L = [4] * nPerfect # [4, 4]
+    L.append(n - nPerfect*4) # [4, 4, 3]
     if L[-1] < 4: # yes
-        for i in range(L[-1]): # range is [0, 1, 2]
-            L[i] += 1
-        # after the loop: [5, 5, 5, 3]
-        L.pop(len(L) - 1) # [5, 5, 5]
+        while L[-1] != 0: # yes | no
+            for i in range(L[-1]): # range is [0, 1, 2] | [0]
+                L[i] += 1
+                L[-1] -= 1
+            # after the for loop: [5, 5, 1] | [6, 5, 0]
+        # after the while loop: [6, 5, 0]
+        L.pop(len(L) - 1) # [6, 5]
     return L
 
 
