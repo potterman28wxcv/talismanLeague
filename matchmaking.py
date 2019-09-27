@@ -2,6 +2,7 @@
 import argparse
 from typing import *
 from itertools import permutations
+from statistics import mean
 import random as rd
 import sys
 
@@ -276,14 +277,41 @@ def contiguous_gather_fixed(parseInfo: ParseInfo, players: List[Name],
     return solution
 
 
-def select_best_solution(solutions: List[Solution]) -> Solution:
-    return {}
+def get_tables_average_ranks(parseInfo: ParseInfo,
+                             solution: Solution) -> Dict[Table, float]:
+    tableRanks: Dict[Table, List[Rank]] = {}
+    for player in solution:
+        table = solution[player].table
+        if table not in tableRanks:
+            tableRanks[table] = []
+        tableRanks[table].append(score_to_rank(parseInfo[player].score))
+    return {table:mean(tableRanks[table]) for table in tableRanks}
+
+
+# Returns a vector of rank difference compared to the average rank of the table
+def solution_score(parseInfo: ParseInfo, solution: Solution) -> List[float]:
+    tablesAvgRanks = get_tables_average_ranks(parseInfo, solution)
+    return [abs(score_to_rank(parseInfo[player].score)
+                - tablesAvgRanks[solution[player].table])
+            for player in solution]
+
+
+def select_best_solution(parseInfo: ParseInfo,
+                         solutions: List[Solution]) -> Optional[Solution]:
+    bestScore = None
+    bestSolution = None
+    for solution in solutions:
+        score = solution_score(parseInfo, solution)
+        if bestScore is None or score < bestScore:
+            bestScore = score
+            bestSolution = solution
+    return bestSolution
 
 
 # Forms a solution by gathering from top to bottom.
 # It tries one solution per permutation of sizes, then takes the best
 def contiguous_gather(parseInfo: ParseInfo, players: List[Name],
-                      sizes: List[int]) -> Solution:
+                      sizes: List[int]) -> Optional[Solution]:
     computed: Set[Tuple[int, ...]] = set()
     solutions: List[Solution] = []
     for orderedSizes in permutations(sizes):
@@ -294,10 +322,10 @@ def contiguous_gather(parseInfo: ParseInfo, players: List[Name],
             continue
         solutions.append(solution)
         computed.add(orderedSizes)
-    return select_best_solution(solutions)
+    return select_best_solution(parseInfo, solutions)
 
 
-def compute_solution(parseInfo: ParseInfo) -> Solution:
+def compute_solution(parseInfo: ParseInfo) -> Optional[Solution]:
     day1 = rng.randint(0, 1)
     ordered = order_players(parseInfo, day1)
     group_sizes = cut_by_four(len(ordered))
@@ -319,10 +347,12 @@ with open(args.file, 'r') as f:
 print(parseInfo)
 
 solution = compute_solution(parseInfo)
-print_solution(solution)
-
-if not check_solution(parseInfo, solution):
-    print("/!\\ The solution is not valid /!\\")
+if solution is None:
+    print("No fitting solution could be found.")
+else:
+    print_solution(solution)
+    if not check_solution(parseInfo, solution):
+        print("/!\\ The solution is not valid /!\\")
 
 ## OLD RANDOM VERSION
 #def selectBestDivider(n: int, li: List[int]) -> int:
