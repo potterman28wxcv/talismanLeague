@@ -237,8 +237,8 @@ def cut_by_four(n: int) -> List[int]:
 
 
 def contiguous_gather_fixed(parseInfo: ParseInfo,
-                            orderedSizes: Tuple[int, ...]) -> Solution:
-    return {}
+                            orderedSizes: Tuple[int, ...]) -> Optional[Solution]:
+    return None
 
 
 def select_best_solution(solutions: List[Solution]) -> Solution:
@@ -253,7 +253,10 @@ def contiguous_gather(parseInfo: ParseInfo, sizes: List[int]) -> Solution:
     for orderedSizes in permutations(sizes):
         if orderedSizes in computed:
             break
-        solutions.append(contiguous_gather_fixed(parseInfo, orderedSizes))
+        solution = contiguous_gather_fixed(parseInfo, orderedSizes)
+        if solution is None:
+            continue
+        solutions.append(solution)
         computed.add(orderedSizes)
     return select_best_solution(solutions)
 
