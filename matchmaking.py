@@ -236,7 +236,7 @@ def cut_by_four(n: int) -> List[int]:
     return L
 
 
-def contiguous_gather_fixed(parseInfo: ParseInfo,
+def contiguous_gather_fixed(parseInfo: ParseInfo, players: List[Name],
                             orderedSizes: Tuple[int, ...]) -> Optional[Solution]:
     return None
 
@@ -247,13 +247,14 @@ def select_best_solution(solutions: List[Solution]) -> Solution:
 
 # Forms a solution by gathering from top to bottom.
 # It tries one solution per permutation of sizes, then takes the best
-def contiguous_gather(parseInfo: ParseInfo, sizes: List[int]) -> Solution:
+def contiguous_gather(parseInfo: ParseInfo, players: List[Name],
+                      sizes: List[int]) -> Solution:
     computed: Set[Tuple[int, ...]] = set()
     solutions: List[Solution] = []
     for orderedSizes in permutations(sizes):
         if orderedSizes in computed:
             break
-        solution = contiguous_gather_fixed(parseInfo, orderedSizes)
+        solution = contiguous_gather_fixed(parseInfo, players, orderedSizes)
         if solution is None:
             continue
         solutions.append(solution)
@@ -265,7 +266,7 @@ def compute_solution(parseInfo: ParseInfo) -> Solution:
     day1 = rng.randint(0, 1)
     ordered = order_players(parseInfo, day1)
     group_sizes = cut_by_four(len(ordered))
-    solution = contiguous_gather(parseInfo, group_sizes)
+    solution = contiguous_gather(parseInfo, ordered, group_sizes)
     return solution
 
 
