@@ -226,7 +226,7 @@ def order_players(parseInfo: ParseInfo, day1: Day) -> List[Name]:
 def cut_by_four(n: int) -> List[int]:
     nPerfect = int(n/4) # 3
     L = [4] * nPerfect # [4, 4, 4]
-    L.append(n - nPerfect) # [4, 4, 4, 3]
+    L.append(n - nPerfect*4) # [4, 4, 4, 3]
     if L[-1] < 4: # yes
         for i in range(L[-1]): # range is [0, 1, 2]
             L[i] += 1
