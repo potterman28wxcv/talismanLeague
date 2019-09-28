@@ -10,7 +10,7 @@ import sys
 from recordclass import recordclass, RecordClass # type: ignore
 
 seed = rd.randrange(sys.maxsize)
-seed = 4209056135191916808
+#seed = 4209056135191916808
 rng = rd.Random(seed)
 print("Seed:", seed)
 
@@ -80,7 +80,7 @@ def _check_solution(parseInfo: ParseInfo, solution: Solution, rankDiff: Optional
     # 3) Each table should have 4 to 6 players
     tableSize: Dict[Table, int] = {}
     for player in solution:
-        table, _ = solution[player]
+        _, table = solution[player]
         if table not in tableSize:
             tableSize[table] = 0
         tableSize[table] += 1
