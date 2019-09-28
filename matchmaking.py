@@ -373,7 +373,21 @@ def random_solution(parseInfo: ParseInfo) -> Optional[Solution]:
 
 # Sort by score, randomizing players of equal score
 def partial_sort_score(parseInfo: ParseInfo) -> List[Name]:
-    return []
+    playersOfScore: Dict[float, List[Name]] = {}
+    for player in parseInfo:
+        score = parseInfo[player].score
+        if score not in playersOfScore:
+            playersOfScore[score] = []
+        playersOfScore[score].append(player)
+
+    for score in playersOfScore:
+        rng.shuffle(playersOfScore[score])
+
+    players = []
+    for score in sorted(playersOfScore.keys(), reverse=True):
+        players.extend(playersOfScore[score])
+
+    return players
 
 
 # Returns whether a table is compatible in regards to the days
