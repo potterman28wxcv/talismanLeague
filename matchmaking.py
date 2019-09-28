@@ -390,8 +390,7 @@ def partial_sort_score(parseInfo: ParseInfo) -> List[Name]:
     return players
 
 
-# Returns whether a table is compatible in regards to the days
-def table_ok(parseInfo: ParseInfo, players: List[Name]) -> bool:
+def deduce_day(parseInfo: ParseInfo, players: List[Name]) -> Optional[Day]:
     day = None
     for player in players:
         days = get_days(parseInfo[player].daysOk)
@@ -399,8 +398,14 @@ def table_ok(parseInfo: ParseInfo, players: List[Name]) -> bool:
             if day is None:
                 day = days[0]
             elif day != days[0]:
-                return False
-    return True
+                return None
+    if day is None:
+        day = rng.randint(0, 1)
+    return day
+
+
+def table_ok(parseInfo: ParseInfo, players: List[Name]) -> bool:
+    return deduce_day(parseInfo, players) != None
 
 
 ##
@@ -444,10 +449,6 @@ def seek_and_swap_players(parseInfo: ParseInfo, upId: Table, downId: Table,
                 break
 
     return table_ok(parseInfo, tables[upId])
-
-
-def deduce_day(parseInfo: ParseInfo, players: List[Name]) -> Optional[Day]:
-    return None
 
 
 ##
