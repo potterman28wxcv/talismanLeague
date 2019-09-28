@@ -10,7 +10,7 @@ import sys
 from recordclass import recordclass, RecordClass # type: ignore
 
 seed = rd.randrange(sys.maxsize)
-#seed = 4209056135191916808
+#seed = 2983959374202191709
 rng = rd.Random(seed)
 print("Seed:", seed)
 
@@ -161,6 +161,7 @@ def print_solution(solution: Solution) -> None:
 
 # Example: cut_by_four(11)
 def cut_by_four(n: int) -> List[int]:
+    assert(n > 7), "The program must be run with more than 7 players"
     nPerfect = int(n/4) # 2
     L = [4] * nPerfect # [4, 4]
     L.append(n - nPerfect*4) # [4, 4, 3]
@@ -312,7 +313,11 @@ def group_and_swap_solution(parseInfo: ParseInfo) -> Optional[Solution]:
 # regardless of score
 ##
 def compute_solution(parseInfo: ParseInfo) -> Optional[Solution]:
-    return group_and_swap_solution(parseInfo)
+    for i in range(100):
+        solution = group_and_swap_solution(parseInfo)
+        if solution is not None and check_solution(parseInfo, solution):
+            break
+    return solution
 
 parser = argparse.ArgumentParser()
 parser.add_argument("file")
