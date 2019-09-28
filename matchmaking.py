@@ -392,7 +392,15 @@ def partial_sort_score(parseInfo: ParseInfo) -> List[Name]:
 
 # Returns whether a table is compatible in regards to the days
 def table_ok(parseInfo: ParseInfo, players: List[Name]) -> bool:
-    return False
+    day = None
+    for player in players:
+        days = get_days(parseInfo[player].daysOk)
+        if len(days) == 1:
+            if day is None:
+                day = days[0]
+            elif day != days[0]:
+                return False
+    return True
 
 
 ##
