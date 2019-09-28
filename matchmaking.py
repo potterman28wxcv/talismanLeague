@@ -417,8 +417,8 @@ def table_ok(parseInfo: ParseInfo, players: List[Name]) -> bool:
 ##
 def seek_and_swap_players(parseInfo: ParseInfo, upId: Table, downId: Table,
                           tables: Dict[Table, List[Name]], reverse: bool = False) -> bool:
-    swapPlayerFound = False
-    while not (table_ok(parseInfo, tables[upId]) or swapPlayerFound):
+    swapPlayerFound = True
+    while not (table_ok(parseInfo, tables[upId]) or (not swapPlayerFound)):
         # Seeking upIdPlayer
         upIdDay = None
         upIdPlayer = None
@@ -431,17 +431,18 @@ def seek_and_swap_players(parseInfo: ParseInfo, upId: Table, downId: Table,
                 elif upIdDay != days[0]:
                     upIdPlayer = player
                     upIdPi = pi
+                    upIdPlayerDay = days[0]
                     break
         assert(upIdPlayer is not None)
 
         # Seeking downIdPlayer
         swapPlayerFound = False
-        iterPlayers = tables[downId]
+        iterPlayers = enumerate(tables[downId])
         if reverse:
-            iterPlayers = reversed(iterPlayers)
-        for pi, player in enumerate(iterPlayers):
+            iterPlayers = reversed(list(iterPlayers))
+        for pi, player in iterPlayers:
             days = get_days(parseInfo[player].daysOk)
-            if len(days) == 2 or (len(days) == 1 and days[0] != upIdDay):
+            if len(days) == 2 or (len(days) == 1 and days[0] != upIdPlayerDay):
                 # do the swap
                 tables[upId][upIdPi] = player
                 tables[downId][pi] = upIdPlayer
@@ -458,7 +459,7 @@ def seek_and_swap_players(parseInfo: ParseInfo, upId: Table, downId: Table,
 ##
 def group_and_swap_solution(parseInfo: ParseInfo) -> Optional[Solution]:
     tables: Dict[Table, List[Name]] = {}
-    groupSizes = sorted(cut_by_four(len(parseInfo.keys())))
+    groupSizes = sorted(cut_by_four(len(parseInfo.keys())), reverse=True)
     players = partial_sort_score(parseInfo)
     tableIndex = 0
     playerIndex = 0
@@ -470,6 +471,10 @@ def group_and_swap_solution(parseInfo: ParseInfo) -> Optional[Solution]:
     for i in range(tableIndex-1):
         if not table_ok(parseInfo, tables[i]):
             seek_and_swap_players(parseInfo, i, i+1, tables)
+
+    # Reordering before tackling reverse pass
+    for table in tables:
+        tables[table].sort(key=lambda name: parseInfo[name].score, reverse=True)
 
     # Reverse pass
     for i in reversed(range(1, tableIndex)):
@@ -499,17 +504,20 @@ def group_and_swap_solution(parseInfo: ParseInfo) -> Optional[Solution]:
 # regardless of score
 ##
 def compute_solution(parseInfo: ParseInfo) -> Optional[Solution]:
-    day1 = rng.randint(0, 1)
-    ordered = order_players(parseInfo, day1)
-    group_sizes = cut_by_four(len(ordered))
-    solution = contiguous_gather(parseInfo, ordered, group_sizes)
-    if solution is None:
-        ordered2 = order_players(parseInfo, 1-day1)
-        solution = contiguous_gather(parseInfo, ordered2, group_sizes)
-    if solution is None:
-        print("Smart contiguous_gather failed, returning a random solution instead")
-        solution = random_solution(parseInfo)
-    return solution
+    return group_and_swap_solution(parseInfo)
+
+## OLD version of compute_solution
+    #day1 = rng.randint(0, 1)
+    #ordered = order_players(parseInfo, day1)
+    #group_sizes = cut_by_four(len(ordered))
+    #solution = contiguous_gather(parseInfo, ordered, group_sizes)
+    #if solution is None:
+    #    ordered2 = order_players(parseInfo, 1-day1)
+    #    solution = contiguous_gather(parseInfo, ordered2, group_sizes)
+    #if solution is None:
+    #    print("Smart contiguous_gather failed, returning a random solution instead")
+    #    solution = random_solution(parseInfo)
+    #return solution
 
 
 parser = argparse.ArgumentParser()
