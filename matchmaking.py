@@ -371,6 +371,104 @@ def random_solution(parseInfo: ParseInfo) -> Optional[Solution]:
     return solution
 
 
+# Sort by score, randomizing players of equal score
+def partial_sort_score(parseInfo: ParseInfo) -> List[Name]:
+    return []
+
+
+# Returns whether a table is compatible in regards to the days
+def table_ok(parseInfo: ParseInfo, players: List[Name]) -> bool:
+    return False
+
+
+##
+# Seek a player to swap in upId
+# seek a swapping partner in downId, and swap them
+# Continue the process as long as the table upId isn't ok
+# Returns true if it actually managed to correctify the table
+# /!\ Supposes the players in upId and downId are already sorted by score /!\
+##
+def seek_and_swap_players(parseInfo: ParseInfo, upId: Table, downId: Table,
+                          tables: Dict[Table, List[Name]], reverse: bool = False) -> bool:
+    swapPlayerFound = False
+    while not (table_ok(parseInfo, tables[upId]) or swapPlayerFound):
+        # Seeking upIdPlayer
+        upIdDay = None
+        upIdPlayer = None
+        upIdPi = None
+        for pi, player in enumerate(tables[upId]):
+            days = get_days(parseInfo[player].daysOk)
+            if len(days) == 1:
+                if upIdDay is None:
+                    upIdDay = days[0]
+                elif upIdDay != days[0]:
+                    upIdPlayer = player
+                    upIdPi = pi
+                    break
+        assert(upIdPlayer is not None)
+
+        # Seeking downIdPlayer
+        swapPlayerFound = False
+        iterPlayers = tables[downId]
+        if reverse:
+            iterPlayers = reversed(iterPlayers)
+        for pi, player in enumerate(iterPlayers):
+            days = get_days(parseInfo[player].daysOk)
+            if len(days) == 2 or (len(days) == 1 and days[0] != upIdDay):
+                # do the swap
+                tables[upId][upIdPi] = player
+                tables[downId][pi] = upIdPlayer
+                swapPlayerFound = True
+                break
+
+    return table_ok(parseInfo, tables[upId])
+
+
+def deduce_day(parseInfo: ParseInfo, players: List[Name]) -> Optional[Day]:
+    return None
+
+
+##
+# 1) Construct a first solution irrespective of the day constraint.
+#    -> order by score, then pick groups from top to bottom
+# 2) Perform swaps in order to correctify the solution
+##
+def group_and_swap_solution(parseInfo: ParseInfo) -> Optional[Solution]:
+    tables: Dict[Table, List[Name]] = {}
+    groupSizes = sorted(cut_by_four(len(parseInfo.keys())))
+    players = partial_sort_score(parseInfo)
+    tableIndex = 0
+    playerIndex = 0
+    for groupSize in groupSizes:
+        tables[tableIndex] = players[playerIndex:playerIndex+groupSize]
+        playerIndex += groupSize
+        tableIndex += 1
+
+    for i in range(tableIndex-1):
+        if not table_ok(parseInfo, tables[i]):
+            seek_and_swap_players(parseInfo, i, i+1, tables)
+
+    # Reverse pass
+    for i in reversed(range(1, tableIndex)):
+        if not table_ok(parseInfo, tables[i]):
+            success = seek_and_swap_players(parseInfo, i, i-1, tables, reverse=True)
+            if not success:
+                return None
+
+    if not table_ok(parseInfo, tables[0]):
+        return None
+
+    solution = {}
+    for i in tables:
+        tablePlayers = tables[i]
+        day = deduce_day(parseInfo, tablePlayers)
+        assert(day is not None)
+        for player in tablePlayers:
+            solution[player] = PA(day, i)
+
+    return solution
+
+
 ##
 # Attempts a solution with a random day as "top day"
 # If no solution was found, try the other day
