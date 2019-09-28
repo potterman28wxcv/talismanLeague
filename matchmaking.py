@@ -306,12 +306,6 @@ def group_and_swap_solution(parseInfo: ParseInfo) -> Optional[Solution]:
     return solution
 
 
-##
-# Attempts a solution with a random day as "top day"
-# If no solution was found, try the other day
-# If still no solution, call the random_solution which just randomizes
-# regardless of score
-##
 def compute_solution(parseInfo: ParseInfo) -> Optional[Solution]:
     for i in range(100):
         solution = group_and_swap_solution(parseInfo)
