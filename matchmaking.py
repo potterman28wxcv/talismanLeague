@@ -362,7 +362,6 @@ def get_tables_score(parseInfo: ParseInfo, tables: List[List[Name]]) -> Tuple[fl
 @timeout(30)
 def exhaustive_search(parseInfo: ParseInfo) -> Optional[Solution]:
     bestTables = None
-    #bestScore = (1, 1)
     day1Only = [player for player in parseInfo
                        if parseInfo[player].daysOk == [True, False]]
     day2Only = [player for player in parseInfo
