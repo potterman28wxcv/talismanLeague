@@ -1,8 +1,9 @@
 #!/usr/bin/python3.6
 import argparse
 from typing import *
+from timeout import timeout, TimeoutError
 from itertools import permutations
-from statistics import mean
+from statistics import mean, stdev
 import random as rd
 import sys
 
@@ -144,8 +145,7 @@ def test_check_solution() -> None:
     print("All good!")
 
 
-def print_solution(solution: Solution) -> None:
-    print(20*"#" + " solution " + 20*"#")
+def print_solution(parseInfo: ParseInfo, solution: Solution) -> None:
     tables : Dict[int, Tuple[Day, List[Name]]] = {}
     for player in solution:
         day, table = solution[player]
@@ -156,12 +156,14 @@ def print_solution(solution: Solution) -> None:
     for table in tables:
         print("Table", table, "of day", tables[table][0])
         for player in tables[table][1]:
-            print("\t", player)
+            print("\t", player, ":", parseInfo[player].score)
 
 
 # Example: cut_by_four(11)
-def cut_by_four(n: int) -> List[int]:
-    assert(n > 7), "The program must be run with more than 7 players"
+def cut_by_four(n: int) -> Optional[List[int]]:
+    assert(n >= 0)
+    if n in [0, 1, 2, 3, 7]:
+        return None
     nPerfect = int(n/4) # 2
     L = [4] * nPerfect # [4, 4]
     L.append(n - nPerfect*4) # [4, 4, 3]
@@ -225,7 +227,7 @@ def table_ok(parseInfo: ParseInfo, players: List[Name]) -> bool:
 # /!\ Supposes the players in upId and downId are already sorted by score /!\
 ##
 def seek_and_swap_players(parseInfo: ParseInfo, upId: Table, downId: Table,
-                          tables: Dict[Table, List[Name]], reverse: bool = False) -> bool:
+                          tables: List[List[Name]], reverse: bool = False) -> bool:
     swapPlayerFound = True
     while not (table_ok(parseInfo, tables[upId]) or (not swapPlayerFound)):
         # Seeking upIdPlayer
@@ -262,31 +264,19 @@ def seek_and_swap_players(parseInfo: ParseInfo, upId: Table, downId: Table,
 
 
 ##
-# 1) Construct a first solution irrespective of the day constraint.
-#    -> order by score, then pick groups from top to bottom
-# 2) Perform swaps in order to correctify the solution
+# Perform swaps in order to correctify the solution
 ##
-def group_and_swap_solution(parseInfo: ParseInfo) -> Optional[Solution]:
-    tables: Dict[Table, List[Name]] = {}
-    groupSizes = sorted(cut_by_four(len(parseInfo.keys())), reverse=True)
-    players = partial_sort_score(parseInfo)
-    tableIndex = 0
-    playerIndex = 0
-    for groupSize in groupSizes:
-        tables[tableIndex] = players[playerIndex:playerIndex+groupSize]
-        playerIndex += groupSize
-        tableIndex += 1
-
-    for i in range(tableIndex-1):
+def correctify_solution(parseInfo: ParseInfo, tables: List[List[Name]]) -> Optional[Solution]:
+    for i in range(len(tables)-1):
         if not table_ok(parseInfo, tables[i]):
             seek_and_swap_players(parseInfo, i, i+1, tables)
 
     # Reordering before tackling reverse pass
     for table in tables:
-        tables[table].sort(key=lambda name: parseInfo[name].score, reverse=True)
+        table.sort(key=lambda name: parseInfo[name].score, reverse=True)
 
     # Reverse pass
-    for i in reversed(range(1, tableIndex)):
+    for i in reversed(range(1, len(tables))):
         if not table_ok(parseInfo, tables[i]):
             success = seek_and_swap_players(parseInfo, i, i-1, tables, reverse=True)
             if not success:
@@ -296,8 +286,7 @@ def group_and_swap_solution(parseInfo: ParseInfo) -> Optional[Solution]:
         return None
 
     solution = {}
-    for i in tables:
-        tablePlayers = tables[i]
+    for i, tablePlayers in enumerate(tables):
         day = deduce_day(parseInfo, tablePlayers)
         assert(day is not None)
         for player in tablePlayers:
@@ -306,12 +295,147 @@ def group_and_swap_solution(parseInfo: ParseInfo) -> Optional[Solution]:
     return solution
 
 
-def compute_solution(parseInfo: ParseInfo) -> Optional[Solution]:
+def group_players(parseInfo: ParseInfo) -> Optional[List[List[Name]]]:
+    tables: List[List[Name]] = []
+    cutByFour = cut_by_four(len(parseInfo.keys()))
+    if cutByFour is None:
+        return None
+    groupSizes = sorted(cutByFour, reverse=True)
+    players = partial_sort_score(parseInfo)
+    playerIndex = 0
+    for groupSize in groupSizes:
+        tables.append(players[playerIndex:playerIndex+groupSize])
+        playerIndex += groupSize
+    return tables
+
+
+def group_and_swap_solution(parseInfo: ParseInfo) -> Optional[Solution]:
+    tables = group_players(parseInfo)
+    if tables is None:
+        return None
+    return correctify_solution(parseInfo, tables)
+
+
+def to_bool_list(n: int, size: int) -> List[bool]:
+    assert (n >= 0)
+    bools = []
+    while (n > 0):
+        bools.append(bool(n%2))
+        n = int(n/2)
+    while len(bools) < size:
+        bools.append(False)
+    bools.reverse()
+    return bools
+
+
+def create_tables_fixed_days(parseInfo: ParseInfo, day1Players: List[Name],
+                             day2Players: List[Name]) -> Optional[List[List[Name]]]:
+    if len(day1Players) > 0:
+        tablesDay1 = group_players({player: parseInfo[player] for player in day1Players})
+        if tablesDay1 is None:
+            return None
+    else:
+        tablesDay1 = []
+
+    if len(day2Players) > 0:
+        tablesDay2 = group_players({player: parseInfo[player] for player in day2Players})
+        if tablesDay2 is None:
+            return None
+    else:
+        tablesDay2 = []
+
+    return tablesDay1 + tablesDay2
+
+
+def get_tables_score(parseInfo: ParseInfo, tables: List[List[Name]]) -> Tuple[float, float]:
+    playerScores = [[parseInfo[player].score for player in table] for table in tables]
+    score = 0.0
+    for table in playerScores:
+        score -= max(table) * sum([max(table)-pl for pl in table])
+
+    # Subscore: comparing the stdev of the two best tables
+    tablesSorted = sorted(playerScores, key=max, reverse=True)
+    subscore = -stdev([mean(table) for table in tablesSorted[0:2]])
+    return (score, subscore)
+
+
+@timeout(30)
+def exhaustive_search(parseInfo: ParseInfo) -> Optional[Solution]:
+    bestTables = None
+    #bestScore = (1, 1)
+    day1Only = [player for player in parseInfo
+                       if parseInfo[player].daysOk == [True, False]]
+    day2Only = [player for player in parseInfo
+                       if parseInfo[player].daysOk == [False, True]]
+    day12 = [player for player in parseInfo
+                    if parseInfo[player].daysOk == [True, True]]
+    for daysIter in range(2**len(day12)):
+        if len(day12) == 0:
+            day1Players = list(day1Only)
+            day2Players = list(day2Only)
+            bestTables = create_tables_fixed_days(parseInfo, day1Players, day2Players)
+            if bestTables is None:
+                continue
+            bestScore = get_tables_score(parseInfo, bestTables)
+            break
+        dayDecisions = to_bool_list(daysIter, len(day12))
+        day1Players = list(day1Only)
+        day2Players = list(day2Only)
+        for i, player in enumerate(day12):
+            if dayDecisions[i]:
+                day2Players.append(player)
+            else:
+                day1Players.append(player)
+        tables = create_tables_fixed_days(parseInfo, day1Players, day2Players)
+        if tables is None:
+            continue
+        score = get_tables_score(parseInfo, tables)
+        if bestTables is None or score > bestScore:
+            bestTables = [tables] # type: ignore
+            bestScore = score
+        elif score == bestScore:
+            bestTables.append(tables) # type: ignore
+        #if score==bestScore:
+        #    print(80*"-")
+        #    print(tables)
+        #    print("\t", score)
+
+    #print("best score:", bestScore)
+    if bestTables is None:
+        return None
+    tables = rng.choice(bestTables) # type: ignore
+    solution = {}
+    for i, tablePlayers in enumerate(tables): # type: ignore
+        day = deduce_day(parseInfo, tablePlayers)
+        assert(day is not None)
+        for player in tablePlayers:
+            solution[player] = PA(day, i)
+    return solution
+
+
+def compute_solution(parseInfo: ParseInfo) -> Optional[List[Solution]]:
+    solutions = []
+    try:
+        solution = exhaustive_search(parseInfo)
+        if solution is not None:
+            print(20*"#" + " exhaustive search suggestion " + 20*"#")
+            print_solution(parseInfo, solution)
+            solutions.append(solution)
+        else:
+            print("Exhaustive search failed (No solution)")
+    except TimeoutError as msg:
+        print("Exhaustive search failed (timeout)")
+        pass
     for i in range(100):
         solution = group_and_swap_solution(parseInfo)
         if solution is not None and check_solution(parseInfo, solution):
+            print(20*"#" + " group_and_swap suggestion " + 20*"#")
+            print_solution(parseInfo, solution)
+            solutions.append(solution)
             break
-    return solution
+    if solution is None:
+        print("group_and_swap failed (No solution)")
+    return solutions
 
 parser = argparse.ArgumentParser()
 parser.add_argument("file")
@@ -334,11 +458,11 @@ print("day2 only:", day2Only)
 print("both days:", day12)
 print(80*"-")
 
-solution = compute_solution(parseInfo)
-if solution is None:
+solutions = compute_solution(parseInfo)
+if solutions is None:
     print("No fitting solution could be found.")
 else:
-    print_solution(solution)
-    if not check_solution(parseInfo, solution):
-        print("/!\\ The solution is not valid /!\\")
+    for i, solution in enumerate(solutions):
+        if not check_solution(parseInfo, solution):
+            print("/!\\ The solution {} is not valid /!\\".format(str(i)))
 
