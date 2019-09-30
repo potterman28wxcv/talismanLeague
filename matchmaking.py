@@ -1,4 +1,3 @@
-#!/usr/bin/python3.6
 # Copyright 2019 Cyril Six. Subject to the GNU GPL v3 license.
 
 import argparse

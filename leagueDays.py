@@ -1,4 +1,3 @@
-#!/usr/bin/python3.6
 from typing import List, Dict, Tuple, Optional, Set
 
 Player=int
