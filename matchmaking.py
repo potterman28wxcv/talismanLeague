@@ -25,10 +25,10 @@ class PlayerInfo(RecordClass):
     score: Score
     daysOk: DaysOk
 PI = PlayerInfo
-ParseInfo = Dict[Name, PlayerInfo]
+PlayersInfo = Dict[Name, PlayerInfo]
 
-def parse_file (f) -> ParseInfo:
-    parseInfo: ParseInfo = {}
+def parse_file (f) -> PlayersInfo:
+    playersInfo: PlayersInfo = {}
     for line in f:
         words = line.split(' ')
         name = ''.join(words[0:-3]).replace('{', '').replace('}', '').replace('|', '')
@@ -37,9 +37,9 @@ def parse_file (f) -> ParseInfo:
         if not any(daysOk):
             continue
 
-        assert(name not in parseInfo)
-        parseInfo[name] = PI(score, daysOk)
-    return parseInfo
+        assert(name not in playersInfo)
+        playersInfo[name] = PI(score, daysOk)
+    return playersInfo
 
 Rank = int
 def score_to_rank(s: Score) -> Rank:
@@ -65,16 +65,16 @@ PA = PlayerAssign
 Solution = Dict[Name, PlayerAssign]
 
 
-def _check_solution(parseInfo: ParseInfo, solution: Solution, rankDiff: Optional[int] = None) -> int:
+def _check_solution(playersInfo: PlayersInfo, solution: Solution, rankDiff: Optional[int] = None) -> int:
     # 1) All players that are available for a day, should have an assignment
-    for player in parseInfo:
-        _, daysOk = parseInfo[player]
+    for player in playersInfo:
+        _, daysOk = playersInfo[player]
         if player not in solution:
             return -1
 
     # 2) Each player should be available during their assigned day
     for player in solution:
-        _, daysOk = parseInfo[player]
+        _, daysOk = playersInfo[player]
         day, _ = solution[player]
         if not daysOk[day]:
             return -2
@@ -95,7 +95,7 @@ def _check_solution(parseInfo: ParseInfo, solution: Solution, rankDiff: Optional
         tableRankRange: Dict[Table, Tuple[int, int]] = {}
         for player in solution:
             table, _ = solution[player]
-            score, _ = parseInfo[player]
+            score, _ = playersInfo[player]
             rank = score_to_rank(score)
             if table not in tableRankRange:
                 tableRankRange[table] = (rank, rank)
@@ -119,34 +119,34 @@ def _check_solution(parseInfo: ParseInfo, solution: Solution, rankDiff: Optional
     return 0
 
 
-def check_solution(parseInfo: ParseInfo, solution: Solution, rankDiff: Optional[int] = None) -> bool:
-    return (_check_solution(parseInfo, solution, rankDiff) == 0)
+def check_solution(playersInfo: PlayersInfo, solution: Solution, rankDiff: Optional[int] = None) -> bool:
+    return (_check_solution(playersInfo, solution, rankDiff) == 0)
 
 
 def test_check_solution() -> None:
-    parseInfo = {"toto": PI(0., [False, True]), "titi": PI(0., [False, True]), "tata": PI(0., [False, True]), "lolo": PI(0., [True, True])}
+    playersInfo = {"toto": PI(0., [False, True]), "titi": PI(0., [False, True]), "tata": PI(0., [False, True]), "lolo": PI(0., [True, True])}
 
     solution = {"toto": PA(1, 0), "titi": PA(1, 0), "tata": PA(1, 0), "lolo": PA(1, 0)}
-    assert(_check_solution(parseInfo, solution, 0) == 0) # success
+    assert(_check_solution(playersInfo, solution, 0) == 0) # success
 
     solution = {"toto": PA(1, 0), "tata": PA(1, 0), "lolo": PA(1, 0)}
-    assert(_check_solution(parseInfo, solution, 0) == -1) # fail 1)
+    assert(_check_solution(playersInfo, solution, 0) == -1) # fail 1)
 
     solution = {"toto": PA(0, 0), "titi": PA(0, 0), "tata": PA(0, 0), "lolo": PA(0, 0)}
-    assert(_check_solution(parseInfo, solution, 0) == -2) # fail 2)
+    assert(_check_solution(playersInfo, solution, 0) == -2) # fail 2)
 
-    parseInfo = {"toto": PI(0., [False, True]), "titi": PI(0., [False, True]), "tata": PI(0., [False, True])}
+    playersInfo = {"toto": PI(0., [False, True]), "titi": PI(0., [False, True]), "tata": PI(0., [False, True])}
     solution = {"toto": PA(1, 0), "titi": PA(1, 0), "tata": PA(1, 0)}
-    assert(_check_solution(parseInfo, solution, 0) == -3) # fail 3)
+    assert(_check_solution(playersInfo, solution, 0) == -3) # fail 3)
 
-    parseInfo = {"toto": PI(10., [False, True]), "titi": PI(0., [False, True]), "tata": PI(0., [False, True]), "lolo": PI(0., [True, True])}
+    playersInfo = {"toto": PI(10., [False, True]), "titi": PI(0., [False, True]), "tata": PI(0., [False, True]), "lolo": PI(0., [True, True])}
     solution = {"toto": PA(1, 0), "titi": PA(1, 0), "tata": PA(1, 0), "lolo": PA(1, 0)}
-    assert(_check_solution(parseInfo, solution, 0) == -4) # fail 4)
+    assert(_check_solution(playersInfo, solution, 0) == -4) # fail 4)
 
     print("All good!")
 
 
-def print_solution(parseInfo: ParseInfo, solution: Solution) -> None:
+def print_solution(playersInfo: PlayersInfo, solution: Solution) -> None:
     tables : Dict[int, Tuple[Day, List[Name]]] = {}
     for player in solution:
         day, table = solution[player]
@@ -157,7 +157,7 @@ def print_solution(parseInfo: ParseInfo, solution: Solution) -> None:
     for table in tables:
         print("Table", table, "of day", tables[table][0])
         for player in tables[table][1]:
-            print("\t", player, ":", parseInfo[player].score)
+            print("\t", player, ":", playersInfo[player].score)
 
 
 # Example: cut_by_four(11)
@@ -184,10 +184,10 @@ def get_days(daysOk: List[bool]) -> List[Day]:
 
 
 # Sort by score, randomizing players of equal score
-def partial_sort_score(parseInfo: ParseInfo) -> List[Name]:
+def partial_sort_score(playersInfo: PlayersInfo) -> List[Name]:
     playersOfScore: Dict[float, List[Name]] = {}
-    for player in parseInfo:
-        score = parseInfo[player].score
+    for player in playersInfo:
+        score = playersInfo[player].score
         if score not in playersOfScore:
             playersOfScore[score] = []
         playersOfScore[score].append(player)
@@ -202,10 +202,10 @@ def partial_sort_score(parseInfo: ParseInfo) -> List[Name]:
     return players
 
 
-def deduce_day(parseInfo: ParseInfo, players: List[Name]) -> Optional[Day]:
+def deduce_day(playersInfo: PlayersInfo, players: List[Name]) -> Optional[Day]:
     day = None
     for player in players:
-        days = get_days(parseInfo[player].daysOk)
+        days = get_days(playersInfo[player].daysOk)
         if len(days) == 1:
             if day is None:
                 day = days[0]
@@ -216,8 +216,8 @@ def deduce_day(parseInfo: ParseInfo, players: List[Name]) -> Optional[Day]:
     return day
 
 
-def table_ok(parseInfo: ParseInfo, players: List[Name]) -> bool:
-    return deduce_day(parseInfo, players) != None
+def table_ok(playersInfo: PlayersInfo, players: List[Name]) -> bool:
+    return deduce_day(playersInfo, players) != None
 
 
 ##
@@ -227,16 +227,16 @@ def table_ok(parseInfo: ParseInfo, players: List[Name]) -> bool:
 # Returns true if it actually managed to correctify the table
 # /!\ Supposes the players in upId and downId are already sorted by score /!\
 ##
-def seek_and_swap_players(parseInfo: ParseInfo, upId: Table, downId: Table,
+def seek_and_swap_players(playersInfo: PlayersInfo, upId: Table, downId: Table,
                           tables: List[List[Name]], reverse: bool = False) -> bool:
     swapPlayerFound = True
-    while not (table_ok(parseInfo, tables[upId]) or (not swapPlayerFound)):
+    while not (table_ok(playersInfo, tables[upId]) or (not swapPlayerFound)):
         # Seeking upIdPlayer
         upIdDay = None
         upIdPlayer = None
         upIdPi = None
         for pi, player in enumerate(tables[upId]):
-            days = get_days(parseInfo[player].daysOk)
+            days = get_days(playersInfo[player].daysOk)
             if len(days) == 1:
                 if upIdDay is None:
                     upIdDay = days[0]
@@ -253,7 +253,7 @@ def seek_and_swap_players(parseInfo: ParseInfo, upId: Table, downId: Table,
         if reverse:
             iterPlayers = reversed(list(iterPlayers))
         for pi, player in iterPlayers:
-            days = get_days(parseInfo[player].daysOk)
+            days = get_days(playersInfo[player].daysOk)
             if len(days) == 2 or (len(days) == 1 and days[0] != upIdPlayerDay):
                 # do the swap
                 tables[upId][upIdPi] = player
@@ -261,34 +261,34 @@ def seek_and_swap_players(parseInfo: ParseInfo, upId: Table, downId: Table,
                 swapPlayerFound = True
                 break
 
-    return table_ok(parseInfo, tables[upId])
+    return table_ok(playersInfo, tables[upId])
 
 
 ##
 # Perform swaps in order to correctify the solution
 ##
-def correctify_solution(parseInfo: ParseInfo, tables: List[List[Name]]) -> Optional[Solution]:
+def correctify_solution(playersInfo: PlayersInfo, tables: List[List[Name]]) -> Optional[Solution]:
     for i in range(len(tables)-1):
-        if not table_ok(parseInfo, tables[i]):
-            seek_and_swap_players(parseInfo, i, i+1, tables)
+        if not table_ok(playersInfo, tables[i]):
+            seek_and_swap_players(playersInfo, i, i+1, tables)
 
     # Reordering before tackling reverse pass
     for table in tables:
-        table.sort(key=lambda name: parseInfo[name].score, reverse=True)
+        table.sort(key=lambda name: playersInfo[name].score, reverse=True)
 
     # Reverse pass
     for i in reversed(range(1, len(tables))):
-        if not table_ok(parseInfo, tables[i]):
-            success = seek_and_swap_players(parseInfo, i, i-1, tables, reverse=True)
+        if not table_ok(playersInfo, tables[i]):
+            success = seek_and_swap_players(playersInfo, i, i-1, tables, reverse=True)
             if not success:
                 return None
 
-    if not table_ok(parseInfo, tables[0]):
+    if not table_ok(playersInfo, tables[0]):
         return None
 
     solution = {}
     for i, tablePlayers in enumerate(tables):
-        day = deduce_day(parseInfo, tablePlayers)
+        day = deduce_day(playersInfo, tablePlayers)
         assert(day is not None)
         for player in tablePlayers:
             solution[player] = PA(day, i)
@@ -296,13 +296,13 @@ def correctify_solution(parseInfo: ParseInfo, tables: List[List[Name]]) -> Optio
     return solution
 
 
-def group_players(parseInfo: ParseInfo) -> Optional[List[List[Name]]]:
+def group_players(playersInfo: PlayersInfo) -> Optional[List[List[Name]]]:
     tables: List[List[Name]] = []
-    cutByFour = cut_by_four(len(parseInfo.keys()))
+    cutByFour = cut_by_four(len(playersInfo.keys()))
     if cutByFour is None:
         return None
     groupSizes = sorted(cutByFour, reverse=True)
-    players = partial_sort_score(parseInfo)
+    players = partial_sort_score(playersInfo)
     playerIndex = 0
     for groupSize in groupSizes:
         tables.append(players[playerIndex:playerIndex+groupSize])
@@ -310,11 +310,11 @@ def group_players(parseInfo: ParseInfo) -> Optional[List[List[Name]]]:
     return tables
 
 
-def group_and_swap_solution(parseInfo: ParseInfo) -> Optional[Solution]:
-    tables = group_players(parseInfo)
+def group_and_swap_solution(playersInfo: PlayersInfo) -> Optional[Solution]:
+    tables = group_players(playersInfo)
     if tables is None:
         return None
-    return correctify_solution(parseInfo, tables)
+    return correctify_solution(playersInfo, tables)
 
 
 def to_bool_list(n: int, size: int) -> List[bool]:
@@ -329,17 +329,17 @@ def to_bool_list(n: int, size: int) -> List[bool]:
     return bools
 
 
-def create_tables_fixed_days(parseInfo: ParseInfo, day1Players: List[Name],
+def create_tables_fixed_days(playersInfo: PlayersInfo, day1Players: List[Name],
                              day2Players: List[Name]) -> Optional[List[List[Name]]]:
     if len(day1Players) > 0:
-        tablesDay1 = group_players({player: parseInfo[player] for player in day1Players})
+        tablesDay1 = group_players({player: playersInfo[player] for player in day1Players})
         if tablesDay1 is None:
             return None
     else:
         tablesDay1 = []
 
     if len(day2Players) > 0:
-        tablesDay2 = group_players({player: parseInfo[player] for player in day2Players})
+        tablesDay2 = group_players({player: playersInfo[player] for player in day2Players})
         if tablesDay2 is None:
             return None
     else:
@@ -348,8 +348,8 @@ def create_tables_fixed_days(parseInfo: ParseInfo, day1Players: List[Name],
     return tablesDay1 + tablesDay2
 
 
-def get_tables_score(parseInfo: ParseInfo, tables: List[List[Name]]) -> Tuple[float, float]:
-    playerScores = [[parseInfo[player].score for player in table] for table in tables]
+def get_tables_score(playersInfo: PlayersInfo, tables: List[List[Name]]) -> Tuple[float, float]:
+    playerScores = [[playersInfo[player].score for player in table] for table in tables]
     score = 0.0
     for table in playerScores:
         score -= max(table) * sum([max(table)-pl for pl in table])
@@ -361,22 +361,22 @@ def get_tables_score(parseInfo: ParseInfo, tables: List[List[Name]]) -> Tuple[fl
 
 
 @timeout(30)
-def exhaustive_search(parseInfo: ParseInfo) -> Optional[Solution]:
+def exhaustive_search(playersInfo: PlayersInfo) -> Optional[Solution]:
     bestTables = None
-    day1Only = [player for player in parseInfo
-                       if parseInfo[player].daysOk == [True, False]]
-    day2Only = [player for player in parseInfo
-                       if parseInfo[player].daysOk == [False, True]]
-    day12 = [player for player in parseInfo
-                    if parseInfo[player].daysOk == [True, True]]
+    day1Only = [player for player in playersInfo
+                       if playersInfo[player].daysOk == [True, False]]
+    day2Only = [player for player in playersInfo
+                       if playersInfo[player].daysOk == [False, True]]
+    day12 = [player for player in playersInfo
+                    if playersInfo[player].daysOk == [True, True]]
     for daysIter in range(2**len(day12)):
         if len(day12) == 0:
             day1Players = list(day1Only)
             day2Players = list(day2Only)
-            bestTables = create_tables_fixed_days(parseInfo, day1Players, day2Players)
+            bestTables = create_tables_fixed_days(playersInfo, day1Players, day2Players)
             if bestTables is None:
                 continue
-            bestScore = get_tables_score(parseInfo, bestTables)
+            bestScore = get_tables_score(playersInfo, bestTables)
             break
         dayDecisions = to_bool_list(daysIter, len(day12))
         day1Players = list(day1Only)
@@ -386,10 +386,10 @@ def exhaustive_search(parseInfo: ParseInfo) -> Optional[Solution]:
                 day2Players.append(player)
             else:
                 day1Players.append(player)
-        tables = create_tables_fixed_days(parseInfo, day1Players, day2Players)
+        tables = create_tables_fixed_days(playersInfo, day1Players, day2Players)
         if tables is None:
             continue
-        score = get_tables_score(parseInfo, tables)
+        score = get_tables_score(playersInfo, tables)
         if bestTables is None or score > bestScore:
             bestTables = [tables] # type: ignore
             bestScore = score
@@ -406,20 +406,20 @@ def exhaustive_search(parseInfo: ParseInfo) -> Optional[Solution]:
     tables = rng.choice(bestTables) # type: ignore
     solution = {}
     for i, tablePlayers in enumerate(tables): # type: ignore
-        day = deduce_day(parseInfo, tablePlayers)
+        day = deduce_day(playersInfo, tablePlayers)
         assert(day is not None)
         for player in tablePlayers:
             solution[player] = PA(day, i)
     return solution
 
 
-def compute_solution(parseInfo: ParseInfo) -> Optional[List[Solution]]:
+def compute_solution(playersInfo: PlayersInfo) -> Optional[List[Solution]]:
     solutions = []
     try:
-        solution = exhaustive_search(parseInfo)
+        solution = exhaustive_search(playersInfo)
         if solution is not None:
             print(20*"#" + " exhaustive search suggestion " + 20*"#")
-            print_solution(parseInfo, solution)
+            print_solution(playersInfo, solution)
             solutions.append(solution)
         else:
             print("Exhaustive search failed (No solution)")
@@ -427,10 +427,10 @@ def compute_solution(parseInfo: ParseInfo) -> Optional[List[Solution]]:
         print("Exhaustive search failed (timeout)")
         pass
     for i in range(100):
-        solution = group_and_swap_solution(parseInfo)
-        if solution is not None and check_solution(parseInfo, solution):
+        solution = group_and_swap_solution(playersInfo)
+        if solution is not None and check_solution(playersInfo, solution):
             print(20*"#" + " group_and_swap suggestion " + 20*"#")
-            print_solution(parseInfo, solution)
+            print_solution(playersInfo, solution)
             solutions.append(solution)
             break
     if solution is None:
@@ -446,23 +446,23 @@ if args.file == "test":
     sys.exit(0)
 
 with open(args.file, 'r') as f:
-    parseInfo = parse_file(f)
+    playersInfo = parse_file(f)
 
 # Some debug prints
-print({player: parseInfo[player].score for player in parseInfo})
-day1Only = [player for player in parseInfo if parseInfo[player].daysOk == [True, False]]
-day2Only = [player for player in parseInfo if parseInfo[player].daysOk == [False, True]]
-day12 = [player for player in parseInfo if parseInfo[player].daysOk == [True, True]]
+print({player: playersInfo[player].score for player in playersInfo})
+day1Only = [player for player in playersInfo if playersInfo[player].daysOk == [True, False]]
+day2Only = [player for player in playersInfo if playersInfo[player].daysOk == [False, True]]
+day12 = [player for player in playersInfo if playersInfo[player].daysOk == [True, True]]
 print("day1 only:", day1Only)
 print("day2 only:", day2Only)
 print("both days:", day12)
 print(80*"-")
 
-solutions = compute_solution(parseInfo)
+solutions = compute_solution(playersInfo)
 if solutions is None:
     print("No fitting solution could be found.")
 else:
     for i, solution in enumerate(solutions):
-        if not check_solution(parseInfo, solution):
+        if not check_solution(playersInfo, solution):
             print("/!\\ The solution {} is not valid /!\\".format(str(i)))
 
