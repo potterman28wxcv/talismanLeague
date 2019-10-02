@@ -20,10 +20,35 @@ nDays = 2 # number of available days
 
 Name = str
 Score = float
+Rank = int
 DaysOk = List[bool]
-class PlayerInfo(RecordClass):
-    score: Score
-    daysOk: DaysOk
+class PlayerInfo():
+    def __init__(self, score: Score, daysOk: DaysOk) -> None:
+        self.score = score
+        self.daysOk = daysOk
+        self._rank: Union[None, Rank] = None
+
+    def get_rank(self) -> Rank:
+        s = self.score
+        assert (s >= 0.0)
+        if (s < 10.0):
+            return 0
+        elif (s < 20.0):
+            return 1
+        elif (s < 35.0):
+            return 2
+        elif (s < 50.0):
+            return 3
+        else:
+            return 4
+
+    @property
+    def rank(self) -> Rank:
+        if self._rank is None:
+            self._rank = self.get_rank()
+        return self._rank
+
+
 PI = PlayerInfo
 PlayersInfo = Dict[Name, PlayerInfo]
 
@@ -41,21 +66,6 @@ def parse_file (f) -> PlayersInfo:
         playersInfo[name] = PI(score, daysOk)
     return playersInfo
 
-Rank = int
-def score_to_rank(s: Score) -> Rank:
-    assert (s >= 0.0)
-    if (s < 10.0):
-        return 0
-    elif (s < 20.0):
-        return 1
-    elif (s < 35.0):
-        return 2
-    elif (s < 50.0):
-        return 3
-    else:
-        return 4
-
-
 Day = int
 Table = int
 class PlayerAssign(RecordClass):
@@ -67,22 +77,21 @@ Solution = Dict[Name, PlayerAssign]
 
 def _check_solution(playersInfo: PlayersInfo, solution: Solution, rankDiff: Optional[int] = None) -> int:
     # 1) All players that are available for a day, should have an assignment
-    for player in playersInfo:
-        _, daysOk = playersInfo[player]
-        if player not in solution:
+    for playerName in playersInfo:
+        if playerName not in solution:
             return -1
 
     # 2) Each player should be available during their assigned day
-    for player in solution:
-        _, daysOk = playersInfo[player]
-        day, _ = solution[player]
-        if not daysOk[day]:
+    for playerName in solution:
+        player = playersInfo[playerName]
+        day, _ = solution[playerName]
+        if not player.daysOk[day]:
             return -2
 
     # 3) Each table should have 4 to 6 players
     tableSize: Dict[Table, int] = {}
-    for player in solution:
-        _, table = solution[player]
+    for playerName in solution:
+        _, table = solution[playerName]
         if table not in tableSize:
             tableSize[table] = 0
         tableSize[table] += 1
@@ -93,18 +102,17 @@ def _check_solution(playersInfo: PlayersInfo, solution: Solution, rankDiff: Opti
     # 4) Check that the rank difference of a table does not exceed RankDiff
     if rankDiff is not None:
         tableRankRange: Dict[Table, Tuple[int, int]] = {}
-        for player in solution:
-            table, _ = solution[player]
-            score, _ = playersInfo[player]
-            rank = score_to_rank(score)
+        for playerName in solution:
+            table, _ = solution[playerName]
+            player = playersInfo[playerName]
             if table not in tableRankRange:
-                tableRankRange[table] = (rank, rank)
+                tableRankRange[table] = (player.rank, player.rank)
 
             rankRange = tableRankRange[table]
-            if rank < rankRange[0]:
-                rankRange = (rank, rankRange[1])
-            elif rank > rankRange[1]:
-                rankRange = (rankRange[0], rank)
+            if player.rank < rankRange[0]:
+                rankRange = (player.rank, rankRange[1])
+            elif player.rank > rankRange[1]:
+                rankRange = (rankRange[0], player.rank)
             tableRankRange[table] = rankRange
 
         for table in tableRankRange:
