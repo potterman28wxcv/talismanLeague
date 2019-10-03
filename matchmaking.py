@@ -52,11 +52,22 @@ class PlayerInfo():
 PI = PlayerInfo
 PlayersInfo = Dict[Name, PlayerInfo]
 
+def remove_all(L: List[Any], x: Any) -> None:
+    length = len(L)
+    i = 0
+    while i < len(L):
+        if L[i] == x:
+            L.remove(L[i])
+            continue
+        i+=1
+
 def parse_file (f) -> PlayersInfo:
     playersInfo: PlayersInfo = {}
     for line in f:
         words = line.split(' ')
+        remove_all(words, '')
         name = ''.join(words[0:-3]).replace('{', '').replace('}', '').replace('|', '')
+        print(words)
         score = float(words[-3])
         daysOk = [bool(int(words[-2])), bool(int(words[-1]))]
         if not any(daysOk):
