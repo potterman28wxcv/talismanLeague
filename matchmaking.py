@@ -12,7 +12,7 @@ import sys
 from recordclass import recordclass, RecordClass # type: ignore
 
 seed = rd.randrange(sys.maxsize)
-#seed = 2983959374202191709
+#seed = 3399729631327393780
 rng = rd.Random(seed)
 print("Seed:", seed)
 
@@ -165,7 +165,7 @@ def test_check_solution() -> None:
     print("All good!")
 
 
-def print_solution(playersInfo: PlayersInfo, solution: Solution) -> None:
+def print_solution(playersInfo: PlayersInfo, solution: Solution, showScore: bool = True) -> None:
     tables : Dict[int, Tuple[Day, List[Name]]] = {}
     for player in solution:
         day, table = solution[player]
@@ -176,7 +176,11 @@ def print_solution(playersInfo: PlayersInfo, solution: Solution) -> None:
     for table in tables:
         print("Table", table, "of day", tables[table][0])
         for player in tables[table][1]:
-            print("\t", player, ":", playersInfo[player].score)
+            if showScore:
+                print("\t", player, ":", playersInfo[player].score)
+            else:
+                print("\t", player)
+
 
 
 # Example: cut_by_four(11)
@@ -484,4 +488,6 @@ else:
     for i, solution in enumerate(solutions):
         if not check_solution(playersInfo, solution):
             print("/!\\ The solution {} is not valid /!\\".format(str(i)))
+    print(30*"-" + " SUGGESTED " + 30*"-")
+    print_solution(playersInfo, solutions[0], showScore=False)
 
