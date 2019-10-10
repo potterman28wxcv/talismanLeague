@@ -165,7 +165,7 @@ def test_check_solution() -> None:
     print("All good!")
 
 
-def print_solution(playersInfo: PlayersInfo, solution: Solution, showScore: bool = True) -> None:
+def print_solution(playersInfo: PlayersInfo, solution: Solution) -> None:
     tables : Dict[int, Tuple[Day, List[Name]]] = {}
     for player in solution:
         day, table = solution[player]
@@ -176,10 +176,7 @@ def print_solution(playersInfo: PlayersInfo, solution: Solution, showScore: bool
     for table in tables:
         print("Table", table, "of day", tables[table][0])
         for player in tables[table][1]:
-            if showScore:
-                print("\t", player, ":", playersInfo[player].score)
-            else:
-                print("\t", player)
+            print("    ", player, "\t", playersInfo[player].score)
 
 
 
@@ -489,5 +486,5 @@ else:
         if not check_solution(playersInfo, solution):
             print("/!\\ The solution {} is not valid /!\\".format(str(i)))
     print(30*"-" + " SUGGESTED " + 30*"-")
-    print_solution(playersInfo, solutions[0], showScore=False)
+    print_solution(playersInfo, solutions[0])
 
