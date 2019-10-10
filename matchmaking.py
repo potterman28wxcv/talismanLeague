@@ -64,6 +64,7 @@ def remove_all(L: List[Any], x: Any) -> None:
 def parse_file (f) -> PlayersInfo:
     playersInfo: PlayersInfo = {}
     for line in f:
+        line = line.replace('\t', '    ')
         words = line.split(' ')
         remove_all(words, '')
         name = ''.join(words[0:-3]).replace('{', '').replace('}', '').replace('|', '')
