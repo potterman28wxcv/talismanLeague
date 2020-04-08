@@ -1,0 +1,28 @@
+Table 0	Player	Score	Character	Gain	Bonus	New score
+	Solaufein	56.5	Prophetess	3	0	59.5
+	apobab	51.5	Exorcist	1	0	52.5
+	Segren	51	Shaman	10	0	61
+Table 1						
+	Atrushan	49.5	Druid	3	0	52.5
+	Stormblessed	48.5	Celestial	1	0	49.5
+	Keith215	40	Martyr	10	0	50
+Table 2						
+	potterman28wxcv	38	Sage	10	0	48
+	michaello	34	Illusionist	6	0	40
+	Jaede	32	Spy	1	0	33
+	theraresheep	39	Fire Wizard	2	0	41
+Table 3						
+	Legolas	74	Scout	4	0	78
+	cheshirecatgirl	53.5	Engineer	7	0	60.5
+	MarikB.	51	Leywalker	1	0	52
+	Exsadus	47.5	Samurai	10	0	57.5
+	MNMNMMMNMNM	66	Gypsy	2	0	68
+Table 4						
+	Wokal	45	Gipsy	2	0	47
+	Jachugaming	41	Prophetess	5.5	0	46.5
+	CieGoLaS	43	Genie	10	0	53
+	Atropos	41	Trophy Hunter	1	0	42
+	VlaDiVaR	45	Doomsayer	5.5	0	50.5
+Table 5						
+	David	31	Samurai	10	0	41
+	ToTNoobMcNoobsen	28	Amazon	1	0	29
