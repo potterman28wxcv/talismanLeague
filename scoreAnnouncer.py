@@ -67,9 +67,9 @@ def print_table(tableName: str, scoreEntries: List[ScoreEntry]) -> None:
         score = entry.score
         nscore = entry.newScore
         assert nscore == tgain+score, "Wrong score written in the spreadsheet!"
-        print("[*]{pos}) {name} with {char} gains {tgain} ({gain} + {bonus}). New score: {score} + {tgain} = {nscore}"
+        print("[*]{pos}) {name} with {char} gains {tgain} ({gain} + {bonus})."
             .format(pos=pos, name=name, char=char, tgain=tgain, gain=gain,
-                bonus=bonus, score=score, nscore=nscore))
+                bonus=bonus))
     print("[/list]")
     print("")
 
@@ -93,7 +93,7 @@ def process_table(lineReader: LineReader) -> None:
     print_table(tableName, scoreEntries)
 
 
-lines = open(args.scorefile).read().splitlines()
+lines = open(args.scorefile, encoding="utf-8").read().splitlines()
 lineReader = LineReader(lines)
 
 while not lineReader.endReached:
