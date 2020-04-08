@@ -27,10 +27,12 @@ class LineReader:
 
 
 class ScoreEntry:
-    def __init__(self, player: str, score: str, character: str, gain: str, bonus: str, newScore: str):
+    def __init__(self, player: str, faction: str, character: str, score: str,
+            gain: str, bonus: str, newScore: str):
         self.player = player
-        self.score = float(score)
+        self.faction = faction
         self.character = character
+        self.score = float(score)
         self.gain = float(gain)
         self.bonus = float(bonus)
         self.newScore = float(newScore)
@@ -81,7 +83,7 @@ def process_table(lineReader: LineReader) -> None:
             break
         split = entryLine.split('\t')
         if not split[0].startswith("Table"):
-            subsplit = split[1:]
+            subsplit = split[1:8]
             scoreEntry = ScoreEntry(*subsplit)
             scoreEntries.append(scoreEntry)
             lineReader.consume()
